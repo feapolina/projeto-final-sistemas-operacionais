@@ -6,6 +6,8 @@
 
 Pra compilar esse mini sistema operacional, devemos criar um arquivo loader.s, e escrever um pouco de código assembly.
 
+CONCEITOS IMPORTANTES:
+
 ## ELF
 
 ELF é um formato de arquivo usado para executáveis e objetos de código. O kernel é um ELF nesse projeto. O livro instrui a compilar o kernel desse sistema operacional como um arquivo executável ELF de 32 bits. A utilização dele deve-se ao fato de que o bootloader já entende o formato ELF. O GRUB sabe como ler o arquivo, carregar ele na posição correta de memória, sem se preocupar com esses detalhes. 
@@ -38,7 +40,7 @@ Agora o código tem que ser linkado pra produzir um arquivo executável. O Grub 
 
 Aqui a gente vai copiar um arquivo, que é o arquivo binário do GRUB 0.97. Colocar na mesma pasta que o loader, link, etc.
 
-#Marcos Eduardo de Oliveira Souza
+# Parte de Marcos Eduardo de Oliveira Souza
 
 ## CRIANDO A ISO
 
