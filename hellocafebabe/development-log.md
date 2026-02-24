@@ -90,3 +90,22 @@ O boot no bochs não está funcionando como no livro, pois como o livro é antig
 ## BOOT COM QEMU
 
 Foi feito o teste com esse simulador no ubuntu 24.04 LTS e a iso funcionou perfeitamente, então, até o momento, os arquivos estão confiáveis e funcionando.
+
+## OUTPUT
+
+Esta etapa será a fase de escrita de texto em console e, também, escrita em portas seriais. Aqui será criado o primeiro que atuará como um elo que liga o kernel e o hardware. Este driver trará uma grande nível de abstração que será nelhor do que tratar diretamente com o hardware.
+
+# MEMORY MAPPED I/O ESCREVENDO EM TELA
+
+Quando o hardware usa esta modalidade de saída, podemos escrever um dado em um endereçamento específico da memória que será consumido pelo hardware e atualizado para este novo dado.
+O framebuffer, por exemplo, é um hardware que mostra na tela uma saída que foi colocado no buffer de memória. O framebuffer contém 80 colunas e 25 linhas para que a saída seja mostrada na tela.
+O endereço inicial do frambuffer é 0x000B8000. As células de bits são de 16 bits, divididos em parte alta e parte baixa, onde a parte alta são os bits mais significativos, enquanto a parte baixa são os bits menos significativos. O exemplo utilizado pelo livro mostra que em 16 bits contém o caracter, sua cor e a cor do fundo. 
+
+Exemplo de escrita no framebuffer usando assembly: mov [0x000B8000], 0x4128, onde 0x000B8000 é o endereço inicial e 0x41 é o caractere A em ASCII, 2 = cor do caractere verde, 8 = cor do fundo cinza escuro.
+
+Também pode ser feito em C manipulando o endereço inicial com um ponteiro do tipo char. char *fb = (char *) 0x000B8000
+e para mostrar o caractere, sua cor e a cor de fundo, basta: fb[0] = 'A'; fb[1] = 0x28;
+
+# MOVENDO O CURSOR (VGA) / I/O ports
+
+O cursor do framebuffer é controlado via I/O ports usando o modelo “comando + dado”. A posição do cursor é um valor de 16 bits (row * 80 + col). Como out envia apenas 8 bits, a posição é enviada em duas partes: primeiro o byte alto e depois o byte baixo. As portas usadas são 0x3D4 (comando/índice: seleciona o registrador 14 ou 15) e 0x3D5 (dados: recebe o byte enviado).
