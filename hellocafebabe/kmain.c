@@ -10,5 +10,10 @@ int kmain(void) {
     /* Move o cursor para a próxima posição (coluna 1) */
     fb_move_cursor(1);
      /* Loop infinito para impedir retorno */
+
+     char msg[] = "Ola, driver!\n";
+     /*mensagem armazenada na variavel msg*/
+     fb_write(msg,13);
+     /*mensagem escrita na tela através do driver*/
     while(1);
 }

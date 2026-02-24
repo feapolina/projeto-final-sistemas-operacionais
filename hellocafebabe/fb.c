@@ -37,3 +37,36 @@ void fb_move_cursor(unsigned short pos)
     /* Envia os 8 bits menos significativos da posição */
     outb(FB_DATA_PORT, pos & 0x00FF);
 }
+/*definição do tamanho de linhas e colunas*/
+#define FB_COLS 80
+#define FB_ROWS 25
+
+/* Posição atual do cursor em células (0..(80*25 - 1))*/
+static unsigned int fb_cursor_pos = 0;
+
+/*A função fb_write escreve len caracteres do buffer buf na tela e avança o cursor 
+automaticamente a cada caractere.*/
+int fb_write(char *buf, unsigned int len)
+{
+    unsigned int i;
+
+    for (i=0; i < len; i++){
+        /*escreve o caractere na posição atual do cursor. Cada célula ocupa 2 bytes,
+        então, multiplica-se por 2.*/
+        fb_write_cell(fb_cursor_pos * 2, buf[i], 2, 8);
+
+        /*avança para a próxima célula*/
+        fb_cursor_pos++;
+
+        /*atualiza o cursor do hardware*/
+        fb_move_cursor((unsigned short)fb_cursor_pos);
+
+        /*se passar do fim, volta pro topo*/
+        if (fb_cursor_pos >= (FB_COLS * FB_ROWS)){
+            fb_cursor_pos = 0;
+            fb_move_cursor((unsigned short)fb_cursor_pos);
+        }
+    }
+
+    return (int)len;
+}

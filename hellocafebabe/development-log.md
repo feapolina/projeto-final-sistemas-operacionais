@@ -109,3 +109,11 @@ e para mostrar o caractere, sua cor e a cor de fundo, basta: fb[0] = 'A'; fb[1] 
 # MOVENDO O CURSOR (VGA) / I/O ports
 
 O cursor do framebuffer é controlado via I/O ports usando o modelo “comando + dado”. A posição do cursor é um valor de 16 bits (row * 80 + col). Como out envia apenas 8 bits, a posição é enviada em duas partes: primeiro o byte alto e depois o byte baixo. As portas usadas são 0x3D4 (comando/índice: seleciona o registrador 14 ou 15) e 0x3D5 (dados: recebe o byte enviado).
+
+# CRIACAO DO DRIVER DE ESCRITA
+
+O livro deixa livre para que o driver *write* seja implementado, dizendo que não existe certou ou errado. No entanto, iremos usar o protótipo sugerido pelo livro: *write*(buf, len), garantindo que os caracteres sejam escritos em sequência, a posição do cursor seja atualizada e o cursor seja movido. 
+A posição do cursor será tratada como células 0...1999, já que 80x25=2000 (tamanho do console em VGA) e o índice será tratado como bytes = pos * 2.
+
+Primeiro passo foi atualizar o fb.h para incluir o protótipo do driver. Após isso, foi criado a função *fb_write* em fb.c 
+
