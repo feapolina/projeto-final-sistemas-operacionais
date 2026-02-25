@@ -1,18 +1,27 @@
-int kmain(void) {
-    /* 1. Ponteiro direto para a placa de vídeo */
-    char *fb = (char *) 0x000B8000;
-    
-    /* 2. Injetamos as letras manualmente na memória */
-    fb[0] = 'O'; fb[1] = 0x28;
-    fb[2] = 'L'; fb[3] = 0x28;
-    fb[4] = 'A'; fb[5] = 0x28;
-    
-    /* 3. A TRAVA MAGICA: Um loop infinito! 
-       Isso faz o processador ficar rodando em círculos aqui para sempre, 
-       mantendo a tela ligada com o nosso texto. */
-    while(1) {
-        /* Não faz nada, só espera */
-    }
+    /* kmain.c */
+#include "fb.h"
+#include "serial.h"
 
-    return 0xCAFEBABE;
+#define FB_GREEN 2
+#define FB_DARK_GREY 8
+
+int kmain(void)
+{
+    /* Teste rápido do framebuffer (baixo nível) */
+    fb_write_cell(0, 'A', FB_GREEN, FB_DARK_GREY);
+    fb_move_cursor(1);
+
+    /* Teste do driver do framebuffer (alto nível) */
+    char msg_fb[] = "Ola, driver!\n";
+    fb_write(msg_fb, 13);
+
+    /* Inicializa COM1 e escreve na serial */
+    serial_init(0x3F8);
+
+    char msg_serial[] = "Ola pela serial!\n";
+    serial_write(0x3F8, msg_serial, 16);
+
+    while (1){}
+    return 0;
 }
+
