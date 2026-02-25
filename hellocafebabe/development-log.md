@@ -6,6 +6,8 @@
 
 Pra compilar esse mini sistema operacional, devemos criar um arquivo loader.s, e escrever um pouco de código assembly.
 
+CONCEITOS IMPORTANTES:
+
 ## ELF
 
 ELF é um formato de arquivo usado para executáveis e objetos de código. O kernel é um ELF nesse projeto. O livro instrui a compilar o kernel desse sistema operacional como um arquivo executável ELF de 32 bits. A utilização dele deve-se ao fato de que o bootloader já entende o formato ELF. O GRUB sabe como ler o arquivo, carregar ele na posição correta de memória, sem se preocupar com esses detalhes. 
@@ -38,7 +40,7 @@ Agora o código tem que ser linkado pra produzir um arquivo executável. O Grub 
 
 Aqui a gente vai copiar um arquivo, que é o arquivo binário do GRUB 0.97. Colocar na mesma pasta que o loader, link, etc.
 
-#Marcos Eduardo de Oliveira Souza
+# Parte de Marcos Eduardo de Oliveira Souza
 
 ## CRIANDO A ISO
 
@@ -88,3 +90,86 @@ O boot no bochs não está funcionando como no livro, pois como o livro é antig
 ## BOOT COM QEMU
 
 Foi feito o teste com esse simulador no ubuntu 24.04 LTS e a iso funcionou perfeitamente, então, até o momento, os arquivos estão confiáveis e funcionando.
+
+## OUTPUT
+
+Esta etapa será a fase de escrita de texto em console e, também, escrita em portas seriais. Aqui será criado o primeiro que atuará como um elo que liga o kernel e o hardware. Este driver trará uma grande nível de abstração que será nelhor do que tratar diretamente com o hardware.
+
+# MEMORY MAPPED I/O ESCREVENDO EM TELA
+
+Quando o hardware usa esta modalidade de saída, podemos escrever um dado em um endereçamento específico da memória que será consumido pelo hardware e atualizado para este novo dado.
+O framebuffer, por exemplo, é um hardware que mostra na tela uma saída que foi colocado no buffer de memória. O framebuffer contém 80 colunas e 25 linhas para que a saída seja mostrada na tela.
+O endereço inicial do frambuffer é 0x000B8000. As células de bits são de 16 bits, divididos em parte alta e parte baixa, onde a parte alta são os bits mais significativos, enquanto a parte baixa são os bits menos significativos. O exemplo utilizado pelo livro mostra que em 16 bits contém o caracter, sua cor e a cor do fundo. 
+
+Exemplo de escrita no framebuffer usando assembly: mov [0x000B8000], 0x4128, onde 0x000B8000 é o endereço inicial e 0x41 é o caractere A em ASCII, 2 = cor do caractere verde, 8 = cor do fundo cinza escuro.
+
+Também pode ser feito em C manipulando o endereço inicial com um ponteiro do tipo char. char *fb = (char *) 0x000B8000
+e para mostrar o caractere, sua cor e a cor de fundo, basta: fb[0] = 'A'; fb[1] = 0x28;
+
+# MOVENDO O CURSOR (VGA) / I/O ports
+
+O cursor do framebuffer é controlado via I/O ports usando o modelo “comando + dado”. A posição do cursor é um valor de 16 bits (row * 80 + col). Como out envia apenas 8 bits, a posição é enviada em duas partes: primeiro o byte alto e depois o byte baixo. As portas usadas são 0x3D4 (comando/índice: seleciona o registrador 14 ou 15) e 0x3D5 (dados: recebe o byte enviado).
+
+# CRIACAO DO DRIVER DE ESCRITA
+
+O livro deixa livre para que o driver *write* seja implementado, dizendo que não existe certou ou errado. No entanto, iremos usar o protótipo sugerido pelo livro: *write*(buf, len), garantindo que os caracteres sejam escritos em sequência, a posição do cursor seja atualizada e o cursor seja movido. 
+A posição do cursor será tratada como células 0...1999, já que 80x25=2000 (tamanho do console em VGA) e o índice será tratado como bytes = pos * 2.
+
+Primeiro passo foi atualizar o fb.h para incluir o protótipo do driver. Após isso, foi criado a função *fb_write* em fb.c 
+
+## ESCRITA EM PORTA SERIAL
+
+# Implementação da Porta Serial (COM1)
+
+Iniciei a implementação da comunicação via porta serial seguindo exatamente a sequência proposta pelo livro.
+A porta utilizada foi a COM1, cujo endereço base padrão é 0x3F8.
+Diferente do framebuffer (que usa memory mapped I/O), a serial funciona exclusivamente através de portas de I/O.
+
+# Implementação de inb
+
+Foi adicionada a função inb no io.s, permitindo leitura de dados de portas.
+Isso foi necessário porque, para transmitir dados pela serial, é preciso consultar o registrador de status (LSR) antes de enviar cada caractere.
+
+# Configuração da Taxa de Transmissão (Baud Rate)
+
+Foi implementada a função serial_configure_baud_rate. A UART possui um clock interno de 115200 Hz.A velocidade final depende de um divisor: baud_rate = 115200 / divisor.
+
+Como o divisor tem 16 bits e outb envia apenas 8 bits por vez, foi necessário:
+
+Ativar o DLAB (bit 7 do Line Command Register, valor 0x80), enviar primeiro o byte alto do divisor, enviar depois o byte baixo.
+Com divisor 2, a taxa configurada é 57600 bps.
+
+# Configuração do Formato da Linha
+
+Foi implementada serial_configure_line. Foi definido: 8 bits por caractere, sem paridade e 1 stop bit. Isso corresponde ao valor 0x03 enviado ao registrador de controle da linha.
+
+# Configuração dos Buffers (FIFO)
+
+Foi implementada serial_configure_buffers. Foi enviado 0xC7 para habilitar o FIFO e limpar os buffers internos. Isso garante que a transmissão e recepção funcionem corretamente.
+
+# Configuração do Modem Control
+
+Foi implementada serial_configure_modem. Foi enviado 0x03, ativando RTS e DTR, permitindo que a transmissão ocorra.
+
+# Inicialização da Serial
+
+Foi criada a função serial_init, que centraliza todas as etapas anteriores: Baud rate, formato da linha, FIFO e modem. Após essa chamada, a porta serial está pronta para transmitir dados.
+
+# Escrita na Serial
+
+Foram implementadas três funções: 
+
+serial_is_transmit_fifo_empty:
+Consulta o Line Status Register.
+O bit 5 (0x20) indica que o transmissor está pronto para enviar dados.
+
+serial_write_char:
+Aguarda (busy wait) até o transmissor estar disponível e envia um único caractere.
+
+serial_write:
+Percorre um buffer de caracteres e transmite um por um.
+A transmissão é síncrona e depende da confirmação do hardware antes de cada envio.
+
+# Configuração do Bochs
+
+Foi adicionada a diretiva com1 no bochsrc.txt para capturar a saída serial, permitindo visualizar as mensagens transmitidas.
