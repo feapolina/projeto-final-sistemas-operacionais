@@ -117,3 +117,59 @@ A posição do cursor será tratada como células 0...1999, já que 80x25=2000 (
 
 Primeiro passo foi atualizar o fb.h para incluir o protótipo do driver. Após isso, foi criado a função *fb_write* em fb.c 
 
+## ESCRITA EM PORTA SERIAL
+
+# Implementação da Porta Serial (COM1)
+
+Iniciei a implementação da comunicação via porta serial seguindo exatamente a sequência proposta pelo livro.
+A porta utilizada foi a COM1, cujo endereço base padrão é 0x3F8.
+Diferente do framebuffer (que usa memory mapped I/O), a serial funciona exclusivamente através de portas de I/O.
+
+# Implementação de inb
+
+Foi adicionada a função inb no io.s, permitindo leitura de dados de portas.
+Isso foi necessário porque, para transmitir dados pela serial, é preciso consultar o registrador de status (LSR) antes de enviar cada caractere.
+
+# Configuração da Taxa de Transmissão (Baud Rate)
+
+Foi implementada a função serial_configure_baud_rate. A UART possui um clock interno de 115200 Hz.A velocidade final depende de um divisor: baud_rate = 115200 / divisor.
+
+Como o divisor tem 16 bits e outb envia apenas 8 bits por vez, foi necessário:
+
+Ativar o DLAB (bit 7 do Line Command Register, valor 0x80), enviar primeiro o byte alto do divisor, enviar depois o byte baixo.
+Com divisor 2, a taxa configurada é 57600 bps.
+
+# Configuração do Formato da Linha
+
+Foi implementada serial_configure_line. Foi definido: 8 bits por caractere, sem paridade e 1 stop bit. Isso corresponde ao valor 0x03 enviado ao registrador de controle da linha.
+
+# Configuração dos Buffers (FIFO)
+
+Foi implementada serial_configure_buffers. Foi enviado 0xC7 para habilitar o FIFO e limpar os buffers internos. Isso garante que a transmissão e recepção funcionem corretamente.
+
+# Configuração do Modem Control
+
+Foi implementada serial_configure_modem. Foi enviado 0x03, ativando RTS e DTR, permitindo que a transmissão ocorra.
+
+# Inicialização da Serial
+
+Foi criada a função serial_init, que centraliza todas as etapas anteriores: Baud rate, formato da linha, FIFO e modem. Após essa chamada, a porta serial está pronta para transmitir dados.
+
+# Escrita na Serial
+
+Foram implementadas três funções: 
+
+serial_is_transmit_fifo_empty:
+Consulta o Line Status Register.
+O bit 5 (0x20) indica que o transmissor está pronto para enviar dados.
+
+serial_write_char:
+Aguarda (busy wait) até o transmissor estar disponível e envia um único caractere.
+
+serial_write:
+Percorre um buffer de caracteres e transmite um por um.
+A transmissão é síncrona e depende da confirmação do hardware antes de cada envio.
+
+# Configuração do Bochs
+
+Foi adicionada a diretiva com1 no bochsrc.txt para capturar a saída serial, permitindo visualizar as mensagens transmitidas.

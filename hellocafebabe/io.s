@@ -10,3 +10,14 @@ outb:
     mov dx, [esp + 4] ; Coloca o número da porta (16 bits) no registrador DX
     out dx, al        ; Envia o conteúdo de AL para a porta DX
     ret               ; Retorna para quem chamou (kmain ou fb_move_cursor)
+
+global inb
+
+; inb - retorna 1 byte lido de uma porta de I/O
+; stack: [esp + 4] endereço da porta
+;        [esp    ] return address
+
+inb:
+    mov dx, [esp + 4]
+    in  al, dx
+    ret
