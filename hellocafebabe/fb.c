@@ -9,13 +9,15 @@
 * @param fg A cor do caracter
 * @param bg A cor do fundo
 */
-
-char *fb = (char*) 0x000B8000;
-
 void fb_write_cell(unsigned int i, char c, unsigned char fg, unsigned char bg)
 {
-fb[i] = c;
-fb[i + 1] = ((fg & 0x0F) << 4) | (bg & 0x0F);
+    /* 1. CORREÇÃO: Colocamos o ponteiro de memória DENTRO da função 
+       para evitar o erro "Triple Fault" de leitura de memória global. */
+    char *fb = (char*) 0x000B8000;
+
+    fb[i] = c;
+    /* 2. CORREÇÃO: Fórmula ajustada para o padrão VGA -> (Fundo << 4) | Letra */
+    fb[i + 1] = ((bg & 0x0F) << 4) | (fg & 0x0F);
 }
 
 /* Portas de I/O do controlador VGA */
@@ -37,6 +39,7 @@ void fb_move_cursor(unsigned short pos)
     /* Envia os 8 bits menos significativos da posição */
     outb(FB_DATA_PORT, pos & 0x00FF);
 }
+
 /*definição do tamanho de linhas e colunas*/
 #define FB_COLS 80
 #define FB_ROWS 25
