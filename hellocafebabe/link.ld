@@ -1,26 +1,26 @@
-ENTRY(loader) /* rotulo de entrada */
+ENTRY(loader)                /* o nome do símbolo de entrada */
 
 SECTIONS {
-    . = 0x00100000;              /* o codigo deve ser carregado em 1MB */
+    . = 0x00100000;          /* o código deve ser carregado em 1 MB */
 
-    .text ALIGN (0x1000) :       /* ALINHE EM 4 KB */
+    .text ALIGN (0x1000) :   /* alinha na página de 4 KB */
     {
-        *(.text)                  /* TODOS AS SEÇÕES DE TEXTO DE TODOS OS ARQUIVOS*/
+        *(.text)             /* todas as seções de texto de todos os arquivos */
     }
 
-    .rodata ALIGN (0x1000):       /* ALINHE EM 4 KB */
+    .rodata ALIGN (0x1000) :
     {
-        *(.rodata*)                /* TODAS AS SEÇÕES DE DADOS APENAS DE LEITURA DE TODOS OS ARQUIVOS */
+        *(.rodata*)          /* todas as seções de dados somente leitura */
     }
 
-    .data ALIGN (0x1000):         /* ALINHE EM 4 KB */
+    .data ALIGN (0x1000) :
     {
-        *(.data)                  /* TODAS AS SEÇÕES DE DADOS DE TODOS ARQUIVOS */
+        *(.data)             /* todas as seções de dados */
     }
 
-    .bss ALIGN (0x1000):         /* ALINHE EM 4 KB */
+    .bss ALIGN (0x1000) :
     {
-        *(COMMON)                /* TODAS SEÇÕES COMMON DE TODOS OS ARQUIVOS */
-        *(.bss)                   /* TODAS AS SEÇÕES BSS DE TODOS OS ARQUIVOS */
+        *(COMMON)            /* todas as seções comuns */
+        *(.bss)              /* todas as seções bss */
     }
 }
