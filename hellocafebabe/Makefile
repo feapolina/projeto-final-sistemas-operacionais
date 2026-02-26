@@ -27,7 +27,7 @@ os.iso: kernel.elf
 	            iso
 
 run: os.iso
-	bochs -f bochsrc.txt -q
+	qemu-system-i386 -cdrom os.iso
 
 %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
