@@ -1,12 +1,17 @@
-    /* kmain.c */
+/* kmain.c */
 #include "fb.h"
 #include "serial.h"
+#include "gdt.h" /* <--- O seu cabeçalho do Capítulo 5 */
 
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
 
 int kmain(void)
 {
+    /* 1. Inicializa a GDT (Segmentação de Memória) */
+    /* Isso DEVE rodar antes de qualquer outra coisa no sistema! */
+    init_gdt();
+
     /* Teste rápido do framebuffer (baixo nível) */
     fb_write_cell(0, 'A', FB_GREEN, FB_DARK_GREY);
     fb_move_cursor(1);
@@ -24,4 +29,3 @@ int kmain(void)
     while (1){}
     return 0;
 }
-

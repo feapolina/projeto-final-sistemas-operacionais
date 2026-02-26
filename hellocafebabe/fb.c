@@ -11,12 +11,12 @@
 */
 void fb_write_cell(unsigned int i, char c, unsigned char fg, unsigned char bg)
 {
-    /* 1. CORREÇÃO: Colocamos o ponteiro de memória DENTRO da função 
-       para evitar o erro "Triple Fault" de leitura de memória global. */
+    /* CORREÇÃO 1: Ponteiro de memória dentro da função para evitar crash */
     char *fb = (char*) 0x000B8000;
 
     fb[i] = c;
-    /* 2. CORREÇÃO: Fórmula ajustada para o padrão VGA -> (Fundo << 4) | Letra */
+    
+    /* CORREÇÃO 2: A matemática correta da cor VGA é (Fundo << 4) | Texto */
     fb[i + 1] = ((bg & 0x0F) << 4) | (fg & 0x0F);
 }
 
