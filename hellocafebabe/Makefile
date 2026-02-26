@@ -1,4 +1,4 @@
-OBJECTS = loader.o kmain.o fb.o io.o serial.o #Arrumando
+OBJECTS = loader.o kmain.o fb.o serial.o io.o gdt.o gdt_asm.o
 CC = gcc
 CFLAGS = -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
          -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c
@@ -16,15 +16,15 @@ os.iso: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf
 	cp stage2_eltorito iso/boot/grub/
 	genisoimage -R                              \
-                -b boot/grub/stage2_eltorito    \
-                -no-emul-boot                   \
-                -boot-load-size 4               \
-                -A os                           \
-                -input-charset utf8             \
-                -quiet                          \
-                -boot-info-table                \
-                -o os.iso                       \
-                iso
+	            -b boot/grub/stage2_eltorito    \
+	            -no-emul-boot                   \
+	            -boot-load-size 4               \
+	            -A os                           \
+	            -input-charset utf8             \
+	            -quiet                          \
+	            -boot-info-table                \
+	            -o os.iso                       \
+	            iso
 
 run: os.iso
 	bochs -f bochsrc.txt -q
