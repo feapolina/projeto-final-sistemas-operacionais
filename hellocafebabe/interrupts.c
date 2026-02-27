@@ -7,9 +7,10 @@ void interrupt_handler(struct cpu_state cpu, struct stack_state stack, unsigned 
 
     (void)cpu;
     (void)stack;
+    
     // Exemplo: Se ocorrer uma divisão por zero (0)
     if (interrupt == 0) {
-        char msg[] = "Erro: Divisao por zero!\n";
+        char msg[] = "Erro criado por interrupcao: Divisao por zero detectada!\n";
         fb_write(msg, sizeof(msg) - 1);
     }
     
