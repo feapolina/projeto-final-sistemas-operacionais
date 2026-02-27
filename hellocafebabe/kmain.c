@@ -3,6 +3,7 @@
 #include "serial.h"
 #include "gdt.h" 
 #include "interrupts.h"
+#include "idt.h"
 
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
@@ -12,6 +13,11 @@ int kmain(void)
     /* 1. Inicializa a GDT (Segmentação de Memória) */
     /* Isso DEVE rodar antes de qualquer outra coisa no sistema! */
     init_gdt();
+
+    idt_install();
+
+    // Dispara manualmente a interrupção 0
+    __asm__ __volatile__("int $0");
 
     struct cpu_state dummy_cpu = {0};
     struct stack_state dummy_stack = {0};
