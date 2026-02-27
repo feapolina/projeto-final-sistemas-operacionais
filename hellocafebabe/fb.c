@@ -53,19 +53,21 @@ int fb_write(char *buf, unsigned int len)
 {
     unsigned int i;
 
-    for (i=0; i < len; i++){
-        /*escreve o caractere na posição atual do cursor. Cada célula ocupa 2 bytes,
-        então, multiplica-se por 2.*/
-        fb_write_cell(fb_cursor_pos * 2, buf[i], 2, 8);
+    for (i = 0; i < len; i++) {
+        if (buf[i] == '\n') {
+            /* Move cursor para o início da próxima linha */
+            fb_cursor_pos += FB_COLS - (fb_cursor_pos % FB_COLS);
+        } else {
+            /* Escreve o caractere na posição atual do cursor */
+            fb_write_cell(fb_cursor_pos * 2, buf[i], 2, 8);
+            fb_cursor_pos++;
+        }
 
-        /*avança para a próxima célula*/
-        fb_cursor_pos++;
-
-        /*atualiza o cursor do hardware*/
+        /* Atualiza o cursor do hardware */
         fb_move_cursor((unsigned short)fb_cursor_pos);
 
-        /*se passar do fim, volta pro topo*/
-        if (fb_cursor_pos >= (FB_COLS * FB_ROWS)){
+        /* Se passar do fim, volta pro topo */
+        if (fb_cursor_pos >= (FB_COLS * FB_ROWS)) {
             fb_cursor_pos = 0;
             fb_move_cursor((unsigned short)fb_cursor_pos);
         }

@@ -25,13 +25,13 @@ int kmain(void)
 
     /* Teste do driver do framebuffer (alto nível) */
     char msg_fb[] = "Ola, driver!\n";
-    fb_write(msg_fb, 13);
+    fb_write(msg_fb, sizeof(msg_fb) - 1);
 
     /* Inicializa COM1 e escreve na serial */
     serial_init(0x3F8);
 
     char msg_serial[] = "Ola pela serial!\n";
-    serial_write(0x3F8, msg_serial, 16);
+    serial_write(0x3F8, sizeof(msg_serial) - 1);
 
     while (1){}
     return 0;
