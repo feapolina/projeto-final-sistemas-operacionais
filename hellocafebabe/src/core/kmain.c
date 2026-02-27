@@ -1,9 +1,9 @@
 /* kmain.c */
-#include "fb.h"
-#include "serial.h"
-#include "gdt.h" 
-#include "interrupts.h"
-#include "idt.h"
+#include "../drivers/fb.h"
+#include "../drivers/serial.h"
+#include "gdt.h"
+#include "../interrupts/interrupts.h"
+#include "../interrupts/idt.h"
 
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
