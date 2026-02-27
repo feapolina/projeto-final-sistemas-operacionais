@@ -1,7 +1,8 @@
 /* kmain.c */
 #include "fb.h"
 #include "serial.h"
-#include "gdt.h" /* <--- O seu cabeçalho do Capítulo 5 */
+#include "gdt.h" 
+#include "interrupts.h"
 
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
@@ -11,6 +12,12 @@ int kmain(void)
     /* 1. Inicializa a GDT (Segmentação de Memória) */
     /* Isso DEVE rodar antes de qualquer outra coisa no sistema! */
     init_gdt();
+
+    struct cpu_state dummy_cpu = {0};
+    struct stack_state dummy_stack = {0};
+
+    // Testa se a lógica de escrita no framebuffer para interrupção 0 funciona
+    interrupt_handler(dummy_cpu, dummy_stack, 0);
 
     /* Teste rápido do framebuffer (baixo nível) */
     fb_write_cell(0, 'A', FB_GREEN, FB_DARK_GREY);
