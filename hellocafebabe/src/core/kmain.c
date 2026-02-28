@@ -12,17 +12,17 @@
 int kmain(void)
 {
     /* 1. Inicializa a GDT (Segmentação de Memória) */
-    /* Isso DEVE rodar antes de qualquer outra coisa no sistema! */
     init_gdt();
-
     idt_install();
 
+    /* 2. Remapeia o PIC */
     pic_remap();
+
+    /* 3. Habilita as interrupções de hardware */
     enable_interrupts();
 
-    // Dispara manualmente a interrupção 0
-    __asm__ __volatile__("int $0");
-
+    __asm__ __volatile__("sti");
+    
 
     char msg_welcome[] = "Kernel Inicializado com sucesso!\n";
     fb_write(msg_welcome, sizeof(msg_welcome) - 1);

@@ -45,9 +45,10 @@ common_interrupt_handler:
     ; 5. Retorna da interrupção
     iret
 
-; Definição das interrupções (Exemplos baseados no livro) [cite: 268, 343-349]
+; Definição das interrupções (Exemplos baseados no livro) 
 no_error_code_interrupt_handler 0 ; Divide-by-zero
 no_error_code_interrupt_handler 1 ; Debug
+no_error_code_interrupt_handler 33 ; Interrupção do Teclado (IRQ 1)
 ; ... (Interrupções 2 a 6)
 error_code_interrupt_handler    8 ; Double Fault (tem código de erro)
 error_code_interrupt_handler    10 ; Invalid TSS
