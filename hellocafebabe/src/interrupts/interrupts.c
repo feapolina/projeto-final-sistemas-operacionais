@@ -35,13 +35,11 @@ void pic_remap(void) {
     outb(PIC2_DATA, 0xFF);
 }
 
-void interrupt_handler(struct cpu_state cpu, struct stack_state stack, unsigned int interrupt)
+void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stack_state stack)
 {
-
     (void)cpu;
     (void)stack;
     
-    // Exemplo: Se ocorrer uma divisão por zero (0)
     if (interrupt == 0) {
         char msg[] = "Erro criado por interrupcao: Divisao por zero detectada!\n";
         fb_write(msg, sizeof(msg) - 1);
@@ -50,20 +48,19 @@ void interrupt_handler(struct cpu_state cpu, struct stack_state stack, unsigned 
         unsigned char scan_code = inb(KBD_DATA_PORT);
         (void)scan_code;
 
-        char msg_tecla[] = "tecla pressionada!\n";
-        fb_write(msg_tecla, sizeof(msg_tecla) - 1);
+        if (!(scan_code & 0x80)){
+            char msg_tecla[] = "tecla pressionada!\n";
+            fb_write(msg_tecla, sizeof(msg_tecla) - 1);
+        }
     }
     
     // Se for uma interrupção de hardware (IRQ 0-15 remapeadas para 32-47)
     if (interrupt >= 32 && interrupt <= 47){
-        // Enviar EOI para o PIC2 se for IRQ 8-15
+        // Enviar EOI para o PIC2 se for IRQ 8-15 (interrupções 40 a 47)
         if (interrupt >= 40){
-            if (interrupt >= 40){
-                outb(0xA0, 0x20);
-            }
-            // Enviar EOI para o PC1
-            outb(0x20, 0x20);
+            outb(0xA0, 0x20);
         }
+        // Enviar EOI para o PIC1 SEMPRE que for uma interrupção de hardware
+        outb(0x20, 0x20);
     }
-    
 }

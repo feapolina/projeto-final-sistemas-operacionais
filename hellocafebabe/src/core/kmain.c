@@ -21,9 +21,6 @@ int kmain(void)
     /* 3. Habilita as interrupções de hardware */
     enable_interrupts();
 
-    __asm__ __volatile__("sti");
-    
-
     char msg_welcome[] = "Kernel Inicializado com sucesso!\n";
     fb_write(msg_welcome, sizeof(msg_welcome) - 1);
 

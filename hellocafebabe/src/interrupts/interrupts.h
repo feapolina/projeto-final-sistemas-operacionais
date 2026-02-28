@@ -20,6 +20,6 @@ struct stack_state {
 } __attribute__((packed));
 
 // Declaração da função para que o kmain saiba que ela existe
-void interrupt_handler(struct cpu_state cpu, struct stack_state stack, unsigned int interrupt);
+void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stack_state stack);
 void pic_remap(void);
 #endif
