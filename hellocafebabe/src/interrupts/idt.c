@@ -5,6 +5,7 @@ extern void interrupt_handler_0();
 extern void interrupt_handler_8();
 extern void interrupt_handler_13();
 extern void interrupt_handler_14();
+extern void interrupt_handler_32();
 
 struct idt_entry idt[256];
 struct idt_ptr   idtp;
@@ -33,6 +34,7 @@ void idt_install() {
     idt_set_gate(8, (unsigned long)interrupt_handler_8, 0x08, 0x8E);
     idt_set_gate(13, (unsigned long)interrupt_handler_13, 0x08, 0x8E);
     idt_set_gate(14, (unsigned long)interrupt_handler_14, 0x08, 0x8E);
+    idt_set_gate(32, (unsigned long) interrupt_handler_32, 0x08, 0x8E);
 
     // Carrega a IDT
     idt_load((unsigned int)&idtp);

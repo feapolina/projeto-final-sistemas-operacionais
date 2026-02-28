@@ -21,5 +21,5 @@ struct stack_state {
 
 // Declaração da função para que o kmain saiba que ela existe
 void interrupt_handler(struct cpu_state cpu, struct stack_state stack, unsigned int interrupt);
-
+void pic_remap(void);
 #endif

@@ -55,3 +55,4 @@ error_code_interrupt_handler    11 ; Segment Not Present
 error_code_interrupt_handler    12 ; Stack-Segment Fault
 error_code_interrupt_handler    13 ; General Protection Fault
 error_code_interrupt_handler    14 ; Page Fault
+error_code_interrupt_handler    32 ; 

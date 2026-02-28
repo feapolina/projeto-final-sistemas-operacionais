@@ -1,6 +1,7 @@
 /* kmain.c */
 #include "../drivers/fb.h"
 #include "../drivers/serial.h"
+#include "../drivers/io.h"
 #include "gdt.h"
 #include "../interrupts/interrupts.h"
 #include "../interrupts/idt.h"
@@ -16,17 +17,18 @@ int kmain(void)
 
     idt_install();
 
+    pic_remap();
+    enable_interrupts();
+
     // Dispara manualmente a interrupção 0
     __asm__ __volatile__("int $0");
 
-    struct cpu_state dummy_cpu = {0};
-    struct stack_state dummy_stack = {0};
 
     char msg_welcome[] = "Kernel Inicializado com sucesso!\n";
     fb_write(msg_welcome, sizeof(msg_welcome) - 1);
 
-    // Testa se a lógica de escrita no framebuffer para interrupção 0 funciona
-    interrupt_handler(dummy_cpu, dummy_stack, 0);
+    char msg_interrupts[] = "Interrupcoes de hardware ativadas.\n";
+    fb_write(msg_interrupts, sizeof(msg_interrupts) - 1);
 
     /* Teste do driver do framebuffer (alto nível) */
     char msg_fb[] = "Driver do framebuffer carregado com sucesso!\n";

@@ -21,3 +21,14 @@ inb:
     mov dx, [esp + 4]
     in  al, dx
     ret
+
+global enable_interrupts
+global disable_interrupts
+
+enable_interrupts:
+    sti
+    ret
+
+disable_interrupts:
+    cli
+    ret
