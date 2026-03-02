@@ -1,3 +1,5 @@
+/* Idt - Aqui montamos a estrutura como no livro, pras entradas da tabela e pro ponteiro de registro, além de ter configurado cada gate depois. */
+
 #ifndef IDT_H
 #define IDT_H
 

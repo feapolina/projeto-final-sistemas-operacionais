@@ -1,7 +1,0 @@
--------- SOBRE O PROJETO ------------------------------------------------------------------------
-
-Para realizar esse projeto, é nos mostrado no PDF que devemos utilizar a linguagem C, usando GCC, pois precisamos de um controle preciso do código gerado e acesso direto à memória. Daria pra ser feito em outras linguagens, mas o livro retrata em C. Para escrever o código assembly, usaremos NASM. E usaremos BASH como linguagem de script para o projeto. Também usaremos MAKE para construir os Makefiles.
-
-Para a realização do projeto, percebe-se, de acordo com o livro, que para criarmos um bootloader, envolveria muito código de baixo nível, que interage com a BIOS. Para facilitar o processo, foi usado um bootloader já existente: o GRUB. Vai facilitar a construção do sistema operacional, por possibilitar que seja construído com um executável do tipo ELF, que vai ser carregado pelo GRUB no local de memória correto. Em seguida, o capítulo explica de forma prática como funciona o processo de boot de um computador, passando pela BIOS, pelo bootloader (usando o GRUB) e chegando até o kernel do próprio sistema operacional. A gente aprende como compilar e linkar um kernel simples, criar uma imagem ISO e executá-la em uma máquina virtual, vendo o sistema “ganhar vida” pela primeira vez. A ideia central do capítulo é dar uma base sólida e amigável para que o leitor consiga rodar seu próprio SO inicial, mesmo que ele ainda seja bem simples.
-
-...

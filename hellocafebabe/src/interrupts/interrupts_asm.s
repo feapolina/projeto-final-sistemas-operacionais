@@ -45,13 +45,15 @@ common_interrupt_handler:
     ; 5. Retorna da interrupção
     iret
 
-; Definição das interrupções (Exemplos baseados no livro) [cite: 268, 343-349]
-no_error_code_interrupt_handler 0 ; Divide-by-zero
+; Definição das interrupções (Exemplos baseados no livro) 
+
+no_error_code_interrupt_handler 0 ; Divisão por zero
 no_error_code_interrupt_handler 1 ; Debug
-; ... (Interrupções 2 a 6)
+no_error_code_interrupt_handler 33 ; Interrupção do Teclado (IRQ 1)
 error_code_interrupt_handler    8 ; Double Fault (tem código de erro)
 error_code_interrupt_handler    10 ; Invalid TSS
 error_code_interrupt_handler    11 ; Segment Not Present
 error_code_interrupt_handler    12 ; Stack-Segment Fault
 error_code_interrupt_handler    13 ; General Protection Fault
 error_code_interrupt_handler    14 ; Page Fault
+error_code_interrupt_handler    32 ; 

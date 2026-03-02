@@ -1,4 +1,4 @@
-# Felipe Cavalcanti Apolinario  
+# Felipe Cavalcanti Apolinario
 
 # SOBRE O QEMU
 
@@ -13,4 +13,3 @@ Para rodar, precisamos digitar no terminal:
 3. qemu-system-i386 -cdrom os.iso -m 32 -boot d -no-reboot -no-shutdown
 
 4. qemu-system-i386 -cdrom os.iso -m 32 -boot d -serial stdio
-

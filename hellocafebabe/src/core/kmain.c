@@ -1,9 +1,9 @@
-/* kmain.c */
-#include "fb.h"
-#include "serial.h"
-#include "gdt.h" 
-#include "interrupts.h"
-#include "idt.h"
+#include "../drivers/fb.h"
+#include "../drivers/serial.h"
+#include "../drivers/io.h"
+#include "gdt.h"
+#include "../interrupts/interrupts.h"
+#include "../interrupts/idt.h"
 
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
@@ -11,24 +11,24 @@
 int kmain(void)
 {
     /* 1. Inicializa a GDT (Segmentação de Memória) */
-    /* Isso DEVE rodar antes de qualquer outra coisa no sistema! */
     init_gdt();
-
     idt_install();
 
-    // Dispara manualmente a interrupção 0
-    __asm__ __volatile__("int $0");
+    /* 2. Remapeia o PIC */
+    pic_remap();
 
-    struct cpu_state dummy_cpu = {0};
-    struct stack_state dummy_stack = {0};
+    /* 3. Habilita as interrupções de hardware */
+    enable_interrupts();
 
+    /* Se a GDT nao funcionar, isso aqui não aparecerá. */
     char msg_welcome[] = "Kernel Inicializado com sucesso!\n";
     fb_write(msg_welcome, sizeof(msg_welcome) - 1);
 
-    // Testa se a lógica de escrita no framebuffer para interrupção 0 funciona
-    interrupt_handler(dummy_cpu, dummy_stack, 0);
+    /* Se GDT ou IDT nao tiver implementado corretamente, causaria triple fault e isso nao apareceria tambem. */
+    char msg_interrupts[] = "Interrupcoes de hardware ativadas.\n";
+    fb_write(msg_interrupts, sizeof(msg_interrupts) - 1);
 
-    /* Teste do driver do framebuffer (alto nível) */
+    /* Teste do driver do framebuffer */
     char msg_fb[] = "Driver do framebuffer carregado com sucesso!\n";
     fb_write(msg_fb, sizeof(msg_fb) - 1);
 
