@@ -11,13 +11,10 @@
 */
 void fb_write_cell(unsigned int i, char c, unsigned char fg, unsigned char bg)
 {
-    /* CORREÇÃO 1: Ponteiro de memória dentro da função para evitar crash */
+    /* Ponteiro de memória */
     char *fb = (char*) 0x000B8000;
-
     fb[i] = c;
-    
-    /* CORREÇÃO 2: A matemática correta da cor VGA é (Fundo << 4) | Texto */
-    fb[i + 1] = ((bg & 0x0F) << 4) | (fg & 0x0F);
+    fb[i + 1] = ((fg & 0x0F) << 4) | (bg & 0x0F);
 }
 
 /* Portas de I/O do controlador VGA */
