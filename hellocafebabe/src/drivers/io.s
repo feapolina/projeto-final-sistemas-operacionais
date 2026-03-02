@@ -1,9 +1,4 @@
-global outb ;Torna a função visível para outros arquivos (C poderá chamar)
-
-; outb - send a byte to an I/O port
-; stack: [esp + 8] the data byte
-;        [esp + 4] the I/O port
-;        [esp    ] return address
+global outb           ; Torna a função visível para outros arquivos (C poderá chamar)
 
 outb:
     mov al, [esp + 8] ; Coloca o dado (8 bits) no registrador AL
