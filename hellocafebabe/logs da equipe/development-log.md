@@ -10,7 +10,7 @@ CONCEITOS IMPORTANTES:
 
 ## ELF
 
-ELF é um formato de arquivo usado para executáveis e objetos de código. O kernel é um ELF nesse projeto. O livro instrui a compilar o kernel desse sistema operacional como um arquivo executável ELF de 32 bits. A utilização dele deve-se ao fato de que o bootloader já entende o formato ELF. O GRUB sabe como ler o arquivo, carregar ele na posição correta de memória, sem se preocupar com esses detalhes. 
+ELF é um formato de arquivo usado para executáveis e objetos de código. O kernel é um ELF nesse projeto. O livro instrui a compilar o kernel desse sistema operacional como um arquivo executável ELF de 32 bits. A utilização dele deve-se ao fato de que o bootloader já entende o formato ELF. O GRUB sabe como ler o arquivo, carregar ele na posição correta de memória, sem se preocupar com esses detalhes.
 
 Mais pro final do final do livro, é sugerido não usar ELF inicialmente, por conta de alguns detalhes. Mas por enquanto, pra realizar esse exercício do hellocafebabe do início do livro, vamos utilizar.
 
@@ -20,7 +20,7 @@ O livro diz:
 
 O GRUB transferirá o controle para o sistema operacional ao pular para uma posição na memória. Antes do salto, o GRUB procurará por um número mágico para garantir que está realmente pulando para um sistema operacional e não para algum código aleatório. Esse número mágico faz parte da especificação multiboot [@multiboot], à qual o GRUB adere. Uma vez que o GRUB realiza o salto, o sistema operacional tem controle total do computador.
 
- -> O VALOR MOSTRADO NO CÓDIGO NÃO É ALEATÓRIO, É DEFINIDO PELO MULTIBOOT (0x1BADB002)
+-> O VALOR MOSTRADO NO CÓDIGO NÃO É ALEATÓRIO, É DEFINIDO PELO MULTIBOOT (0x1BADB002)
 
 ## CÁLCULO DO CHECKSUM
 
@@ -28,7 +28,7 @@ O Cálculo do checksum é feito da seguinte forma: (número mágico + checksum +
 
 ## COMPILAÇÃO
 
-Pra compilar em ELF 32 bits: 
+Pra compilar em ELF 32 bits:
 
 `nasm -f elf32 loader.s`
 
@@ -36,7 +36,7 @@ Pra compilar em ELF 32 bits:
 
 Agora o código tem que ser linkado pra produzir um arquivo executável. O Grub tem que carregar o kernel num endereço de memória que seja maior ou igual 0x00100000 (1 MB), porque endereços menores que 1MB são usados pelo próprio GRUB, BIOS e dispositivos de entrada e saída. Ou seja, vai estar ocupado. Então pra definir isso, criaremos um arquivo link.ld
 
-## OBTENDO O GRUB 
+## OBTENDO O GRUB
 
 Aqui a gente vai copiar um arquivo, que é o arquivo binário do GRUB 0.97. Colocar na mesma pasta que o loader, link, etc.
 
@@ -46,7 +46,7 @@ Aqui a gente vai copiar um arquivo, que é o arquivo binário do GRUB 0.97. Colo
 
 Vamos criar a imagem ISO do kernel com o programa genisoimage. Tem que ter uma estrutura de pastas específica, então foi criada uma ramificação de pasta iso/boot/grub. E copiar o arquivo de grub e o arquivo de kernel. Deve ser também criado um arquivo de configuração chamado menu.lst para o GRUB. Esse arquivo diz pro GRUB onde o kernel tá localizado e algumas configurações a mais.
 
-## COMANDO PARA GERAR A ISO 
+## COMANDO PARA GERAR A ISO
 
 genisoimage -R
 -b boot/grub/stage2_eltorito
@@ -91,6 +91,8 @@ O boot no bochs não está funcionando como no livro, pois como o livro é antig
 
 Foi feito o teste com esse simulador no ubuntu 24.04 LTS e a iso funcionou perfeitamente, então, até o momento, os arquivos estão confiáveis e funcionando.
 
+-----------------------------------------------CAP 4 ------------------------------------------------------------------
+
 ## OUTPUT
 
 Esta etapa será a fase de escrita de texto em console e, também, escrita em portas seriais. Aqui será criado o primeiro que atuará como um elo que liga o kernel e o hardware. Este driver trará uma grande nível de abstração que será nelhor do que tratar diretamente com o hardware.
@@ -99,23 +101,23 @@ Esta etapa será a fase de escrita de texto em console e, também, escrita em po
 
 Quando o hardware usa esta modalidade de saída, podemos escrever um dado em um endereçamento específico da memória que será consumido pelo hardware e atualizado para este novo dado.
 O framebuffer, por exemplo, é um hardware que mostra na tela uma saída que foi colocado no buffer de memória. O framebuffer contém 80 colunas e 25 linhas para que a saída seja mostrada na tela.
-O endereço inicial do frambuffer é 0x000B8000. As células de bits são de 16 bits, divididos em parte alta e parte baixa, onde a parte alta são os bits mais significativos, enquanto a parte baixa são os bits menos significativos. O exemplo utilizado pelo livro mostra que em 16 bits contém o caracter, sua cor e a cor do fundo. 
+O endereço inicial do frambuffer é 0x000B8000. As células de bits são de 16 bits, divididos em parte alta e parte baixa, onde a parte alta são os bits mais significativos, enquanto a parte baixa são os bits menos significativos. O exemplo utilizado pelo livro mostra que em 16 bits contém o caracter, sua cor e a cor do fundo.
 
 Exemplo de escrita no framebuffer usando assembly: mov [0x000B8000], 0x4128, onde 0x000B8000 é o endereço inicial e 0x41 é o caractere A em ASCII, 2 = cor do caractere verde, 8 = cor do fundo cinza escuro.
 
-Também pode ser feito em C manipulando o endereço inicial com um ponteiro do tipo char. char *fb = (char *) 0x000B8000
+Também pode ser feito em C manipulando o endereço inicial com um ponteiro do tipo char. char _fb = (char _) 0x000B8000
 e para mostrar o caractere, sua cor e a cor de fundo, basta: fb[0] = 'A'; fb[1] = 0x28;
 
 # MOVENDO O CURSOR (VGA) / I/O ports
 
-O cursor do framebuffer é controlado via I/O ports usando o modelo “comando + dado”. A posição do cursor é um valor de 16 bits (row * 80 + col). Como out envia apenas 8 bits, a posição é enviada em duas partes: primeiro o byte alto e depois o byte baixo. As portas usadas são 0x3D4 (comando/índice: seleciona o registrador 14 ou 15) e 0x3D5 (dados: recebe o byte enviado).
+O cursor do framebuffer é controlado via I/O ports usando o modelo “comando + dado”. A posição do cursor é um valor de 16 bits (row \* 80 + col). Como out envia apenas 8 bits, a posição é enviada em duas partes: primeiro o byte alto e depois o byte baixo. As portas usadas são 0x3D4 (comando/índice: seleciona o registrador 14 ou 15) e 0x3D5 (dados: recebe o byte enviado).
 
 # CRIACAO DO DRIVER DE ESCRITA
 
-O livro deixa livre para que o driver *write* seja implementado, dizendo que não existe certou ou errado. No entanto, iremos usar o protótipo sugerido pelo livro: *write*(buf, len), garantindo que os caracteres sejam escritos em sequência, a posição do cursor seja atualizada e o cursor seja movido. 
-A posição do cursor será tratada como células 0...1999, já que 80x25=2000 (tamanho do console em VGA) e o índice será tratado como bytes = pos * 2.
+O livro deixa livre para que o driver _write_ seja implementado, dizendo que não existe certou ou errado. No entanto, iremos usar o protótipo sugerido pelo livro: _write_(buf, len), garantindo que os caracteres sejam escritos em sequência, a posição do cursor seja atualizada e o cursor seja movido.
+A posição do cursor será tratada como células 0...1999, já que 80x25=2000 (tamanho do console em VGA) e o índice será tratado como bytes = pos \* 2.
 
-Primeiro passo foi atualizar o fb.h para incluir o protótipo do driver. Após isso, foi criado a função *fb_write* em fb.c 
+Primeiro passo foi atualizar o fb.h para incluir o protótipo do driver. Após isso, foi criado a função _fb_write_ em fb.c
 
 ## ESCRITA EM PORTA SERIAL
 
@@ -157,7 +159,7 @@ Foi criada a função serial_init, que centraliza todas as etapas anteriores: Ba
 
 # Escrita na Serial
 
-Foram implementadas três funções: 
+Foram implementadas três funções:
 
 serial_is_transmit_fifo_empty:
 Consulta o Line Status Register.

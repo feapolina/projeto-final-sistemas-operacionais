@@ -20,9 +20,11 @@ int kmain(void)
     /* 3. Habilita as interrupções de hardware */
     enable_interrupts();
 
+    /* Se a GDT nao funcionar, isso aqui não aparecerá. */
     char msg_welcome[] = "Kernel Inicializado com sucesso!\n";
     fb_write(msg_welcome, sizeof(msg_welcome) - 1);
 
+    /* Se GDT ou IDT nao tiver implementado corretamente, causaria triple fault e isso nao apareceria tambem. */
     char msg_interrupts[] = "Interrupcoes de hardware ativadas.\n";
     fb_write(msg_interrupts, sizeof(msg_interrupts) - 1);
 
