@@ -8,7 +8,7 @@
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
 
-int kmain(void)
+int kmain(unsigned int ebx)
 {
     /* 1. Inicializa a GDT (Segmentação de Memória) */
     init_gdt();
