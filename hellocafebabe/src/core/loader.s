@@ -5,7 +5,7 @@ MAGIC_NUMBER   equ 0x1BADB002     ; Número mágico usado pelo Multiboot para id
 ALIGN_MODULES  equ 0x00000001     ; Flag para alinhar módulos carregados pelo GRUB
 CHECKSUM       equ -(MAGIC_NUMBER + ALIGN_MODULES) ; Checksum para validar o cabeçalho Multiboot
 
-section .text:                    ; Seção de código executável
+section .text                     ; Seção de código executável
 align 4                           ; Alinha o código a um limite de 4 bytes
 
 dd MAGIC_NUMBER                   ; Escreve o número mágico no cabeçalho

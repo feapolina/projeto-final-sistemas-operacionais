@@ -36,40 +36,57 @@ int kmain(unsigned int ebx)
     /* Inicializa COM1 e escreve na serial */
     serial_init(0x3F8);
 
-    char msg_serial[] = "Comunicação via porta serial do PC ativa com sucesso!\n";
+    char msg_serial[] = "Comunicacao via porta serial do PC ativa com sucesso!\n";
     serial_write(0x3F8, msg_serial, sizeof(msg_serial) - 1);
 
-    /* 4. Interpreta o valor de ebx como ponteiro para a estrutura multiboot_info */
+    /* =========================
+       CAPITULO 7 - MULTIBOOT
+       ========================= */
+
+    /* Passo 1: interpreta o valor de ebx como ponteiro para a estrutura multiboot_info */
+    char msg_step1[] = "Passo 1: lendo multiboot...\n";
+    fb_write(msg_step1, sizeof(msg_step1) - 1);
+
     multiboot_info_t *mbinfo = (multiboot_info_t *) ebx;
 
-    /* 5. Verifica se o GRUB carregou módulos */
+    /* Passo 2: verifica se o GRUB carregou modulos */
+    char msg_step2[] = "Passo 2: verificando flags...\n";
+    fb_write(msg_step2, sizeof(msg_step2) - 1);
+
+    /* bit 3 (0x8) indica que mods_count e mods_addr sao validos */
     if (!(mbinfo->flags & 0x8)) {
         char msg_no_modules[] = "ERRO: GRUB nao carregou modulos.\n";
         fb_write(msg_no_modules, sizeof(msg_no_modules) - 1);
         while (1) {}
     }
 
-    /* 6. Verifica se exatamente um módulo foi carregado */
+    /* Passo 3: verifica se exatamente um modulo foi carregado */
+    char msg_step3[] = "Passo 3: verificando mods_count...\n";
+    fb_write(msg_step3, sizeof(msg_step3) - 1);
+
     if (mbinfo->mods_count != 1) {
         char msg_mod_count[] = "ERRO: mods_count diferente de 1.\n";
         fb_write(msg_mod_count, sizeof(msg_mod_count) - 1);
         while (1) {}
     }
 
-    /* 7. Obtém o endereço do primeiro módulo carregado */
+    /* Passo 4: obtem o endereco do primeiro modulo carregado */
+    char msg_step4[] = "Passo 4: obtendo modulo...\n";
+    fb_write(msg_step4, sizeof(msg_step4) - 1);
+
     multiboot_module_t *mods = (multiboot_module_t *) mbinfo->mods_addr;
-    unsigned int mod_start = mods[0].mod_start;
+    unsigned int mod_start = (unsigned int) mods[0].mod_start;
 
-    /* 8. Exibe mensagem antes de executar o módulo */
-    char msg_module[] = "Executando modulo...\n";
-    fb_write(msg_module, sizeof(msg_module) - 1);
+    /* Passo 5: exibe mensagem antes de executar o modulo */
+    char msg_step5[] = "Passo 5: executando modulo...\n";
+    fb_write(msg_step5, sizeof(msg_step5) - 1);
 
-    /* 9. Trata o endereço do módulo como função e executa */
+    /* Passo 6: trata o endereco do modulo como funcao e executa */
     typedef void (*module_entry_t)(void);
     module_entry_t entry = (module_entry_t) mod_start;
     entry();
 
-    /* Se o módulo retornar, o kernel entra em loop infinito */
+    /* Se o modulo retornar, o kernel entra em loop infinito */
     while (1) {}
     return 0;
 }
