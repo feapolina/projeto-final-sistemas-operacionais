@@ -44,26 +44,35 @@ void fb_move_cursor(unsigned short pos)
 /* Posição atual do cursor em células (0..(80*25 - 1))*/
 static unsigned int fb_cursor_pos = 0;
 
-/*A função fb_write escreve len caracteres do buffer buf na tela e avança o cursor 
-automaticamente a cada caractere.*/
+/* A função fb_write escreve len caracteres do buffer buf na tela e avança o cursor 
+automaticamente a cada caractere. */
 int fb_write(char *buf, unsigned int len)
 {
     unsigned int i;
 
     for (i = 0; i < len; i++) {
         if (buf[i] == '\n') {
-            /* Move cursor para o início da próxima linha */
+            /* Enter: Move cursor para o início da próxima linha */
             fb_cursor_pos += FB_COLS - (fb_cursor_pos % FB_COLS);
-        } else {
-            /* Escreve o caractere na posição atual do cursor */
+        } 
+        else if (buf[i] == '\b') {
+            /* Backspace: Volta o cursor e apaga a letra */
+            if (fb_cursor_pos > 0) {
+                fb_cursor_pos--; /* Passo 1: Volta uma casa */
+                /* Passo 2: Escreve um espaço em branco por cima, mantendo as cores */
+                fb_write_cell(fb_cursor_pos * 2, ' ', 2, 8); 
+            }
+        } 
+        else {
+            /* Letras normais: Escreve o caractere na posição atual do cursor e avança */
             fb_write_cell(fb_cursor_pos * 2, buf[i], 2, 8);
             fb_cursor_pos++;
         }
 
-        /* Atualiza o cursor do hardware */
+        /* Atualiza o cursor piscante do hardware na tela */
         fb_move_cursor((unsigned short)fb_cursor_pos);
 
-        /* Se passar do fim, volta pro topo */
+        /* Se passar do fim da tela, volta pro topo */
         if (fb_cursor_pos >= (FB_COLS * FB_ROWS)) {
             fb_cursor_pos = 0;
             fb_move_cursor((unsigned short)fb_cursor_pos);
