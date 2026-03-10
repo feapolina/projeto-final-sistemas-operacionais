@@ -1,13 +1,42 @@
-O seguinte projeto foi desenvolvido para a disciplina de Sistemas Operacionais I, com o professor Davi.
+# 🚀 Mini Sistema Operacional - Projeto Final
 
-A ideia é implementar um sistema operacional, seguindo as instruções do reposítório (ou livro): https://littleosbook.github.io/
+Este projeto foi desenvolvido para a disciplina de Sistemas Operacionais I, lecionada pelo professor Davi. O objetivo principal é a implementação passo a passo de um sistema operacional, seguindo as instruções e a arquitetura propostas pelo repositório e livro [The Little OS Book](https://littleosbook.github.io/).
 
-O grupo é formado por: Felipe Cavalcanti Apolinario, Marcos Eduardo de Oliveira Souza, Gustavo de Andrade Lacerda, Isabella Nascimento de Sousa
+---
 
--------- SOBRE O PROJETO ------------------------------------------------------------------------
+## 👥 Equipe
 
-Para realizar esse projeto, é nos mostrado no PDF que devemos utilizar a linguagem C, usando GCC, pois precisamos de um controle preciso do código gerado e acesso direto à memória. Daria pra ser feito em outras linguagens, mas o livro retrata em C. Para escrever o código assembly, usaremos NASM. E usaremos BASH como linguagem de script para o projeto. Também usaremos MAKE para construir os Makefiles.
+O projeto foi construído em equipe pelos seguintes membros:
 
-Para a realização do projeto, percebe-se, de acordo com o livro, que para criarmos um bootloader, envolveria muito código de baixo nível, que interage com a BIOS. Para facilitar o processo, foi usado um bootloader já existente: o GRUB. Vai facilitar a construção do sistema operacional, por possibilitar que seja construído com um executável do tipo ELF, que vai ser carregado pelo GRUB no local de memória correto. Em seguida, o capítulo explica de forma prática como funciona o processo de boot de um computador, passando pela BIOS, pelo bootloader (usando o GRUB) e chegando até o kernel do próprio sistema operacional. A gente aprende como compilar e linkar um kernel simples, criar uma imagem ISO e executá-la em uma máquina virtual, vendo o sistema “ganhar vida” pela primeira vez. A ideia central do capítulo é dar uma base sólida e amigável para que o leitor consiga rodar seu próprio SO inicial, mesmo que ele ainda seja bem
+- Felipe Cavalcanti Apolinario
+- Marcos Eduardo de Oliveira Souza
+- Gustavo de Andrade Lacerda
+- Isabella Nascimento de Sousa
 
-Como emulador, utilizamos Qemu, pois o Bochs mostrado no livro não funciona como deveria.
+---
+
+## 🛠️ Tecnologias e Ferramentas Utilizadas
+
+Para garantir o controle preciso do código gerado e o acesso direto à memória, as seguintes tecnologias foram adotadas:
+
+- **C (GCC):** Linguagem principal do kernel, escolhida por permitir manipulação de baixo nível e ser a linguagem padrão do livro.
+- **Assembly (NASM):** Utilizado para escrever o código de inicialização (`loader.s`) e instruções específicas de hardware.
+- **Bash & Make:** Utilizados como linguagens de script e automação da compilação através de arquivos Makefile.
+- **GRUB (0.97):** Utilizado como bootloader (através da especificação Multiboot) para evitar a complexidade de interagir diretamente com a BIOS e carregar o arquivo executável ELF do kernel no local correto da memória.
+- **QEMU:** Escolhido como emulador (testado no Ubuntu 24.04 LTS), uma vez que o Bochs apresentou problemas de compatibilidade com instruções de distribuições Linux modernas.
+- **Genisoimage:** Ferramenta utilizada para gerar a imagem ISO (`os.iso`) inicializável do sistema.
+
+---
+
+## ▶️ Como Rodar o Projeto
+
+Para executar o sistema operacional localmente em sua máquina, siga os passos abaixo:
+
+### 1. Clonando o Repositório
+
+Primeiramente, você precisa clonar o repositório oficial do projeto:
+
+```bash
+git clone [https://github.com/feapolina/projeto-final-sistemas-operacionais.git](https://github.com/feapolina/projeto-final-sistemas-operacionais.git)
+cd projeto-final-sistemas-operacionais/hellocafebabe
+```
