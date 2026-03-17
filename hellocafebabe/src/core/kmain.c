@@ -5,7 +5,7 @@
 #include "../interrupts/interrupts.h"
 #include "../interrupts/idt.h"
 #include "multiboot.h"
-
+#define KERNEL_VIRTUAL_BASE 0XC0000000
 #define FB_GREEN 2
 #define FB_DARK_GREY 8
 
@@ -47,7 +47,7 @@ int kmain(unsigned int ebx)
     char msg_step1[] = "Passo 1: lendo multiboot...\n";
     fb_write(msg_step1, sizeof(msg_step1) - 1);
 
-    multiboot_info_t *mbinfo = (multiboot_info_t *) ebx;
+    multiboot_info_t *mbinfo = (multiboot_info_t *) (ebx + KERNEL_VIRTUAL_BASE);
 
     /* Passo 2: verifica se o GRUB carregou modulos */
     char msg_step2[] = "Passo 2: verificando flags...\n";
@@ -74,8 +74,8 @@ int kmain(unsigned int ebx)
     char msg_step4[] = "Passo 4: obtendo modulo...\n";
     fb_write(msg_step4, sizeof(msg_step4) - 1);
 
-    multiboot_module_t *mods = (multiboot_module_t *) mbinfo->mods_addr;
-    unsigned int mod_start = (unsigned int) mods[0].mod_start;
+    multiboot_module_t *mods = (multiboot_module_t *) (mbinfo->mods_addr + KERNEL_VIRTUAL_BASE);
+    unsigned int mod_start = (unsigned int) (mods[0].mod_start + KERNEL_VIRTUAL_BASE);
 
     /* Passo 5: exibe mensagem antes de executar o modulo */
     char msg_step5[] = "Passo 5: executando modulo...\n";
