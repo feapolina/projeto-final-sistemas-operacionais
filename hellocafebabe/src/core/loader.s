@@ -8,6 +8,12 @@ CHECKSUM          equ -(MAGIC_NUMBER + ALIGN_MODULES)
 KERNEL_VIRTUAL_BASE equ 0xC0000000
 KERNEL_STACK_SIZE   equ 4096
 
+section .multiboot                                  ; ADICIONADO - header multiboot em seção própria
+align 4                                             ; ADICIONADO - alinhamento exigido pelo GRUB
+dd MAGIC_NUMBER                                     ; ADICIONADO - magic multiboot
+dd ALIGN_MODULES                                    ; ADICIONADO - flags
+dd CHECKSUM  
+
 section .text
 align 4
 

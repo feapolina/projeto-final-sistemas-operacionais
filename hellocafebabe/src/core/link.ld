@@ -1,11 +1,16 @@
-ENTRY(loader)                                                           
+ENTRY(loader)
 
 SECTIONS
 {
-    . = 0xC0100000;                                                    
+    . = 0xC0100000;
 
-    kernel_virtual_start = .;                                           /*início virtual do kernel */
-    kernel_physical_start = . - 0xC0000000;                             /* aqui tambem */
+    kernel_virtual_start = .;
+    kernel_physical_start = . - 0xC0000000;
+
+    .multiboot ALIGN(4) : AT(ADDR(.multiboot) - 0xC0000000)             /* ADICIONADO - header multiboot primeiro */
+    {
+        KEEP(*(.multiboot))                                              /* ADICIONADO - impede o linker de descartar */
+    }
 
     .text ALIGN(0x1000) : AT(ADDR(.text) - 0xC0000000)
     {
@@ -28,6 +33,6 @@ SECTIONS
         *(.bss)
     }
 
-    kernel_virtual_end = .;                                             /* fim virtual do kernel */
-    kernel_physical_end = . - 0xC0000000;                               /* aqui tb fim físico do kernel */
+    kernel_virtual_end = .;
+    kernel_physical_end = . - 0xC0000000;
 }

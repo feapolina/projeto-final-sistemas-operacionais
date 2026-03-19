@@ -2,6 +2,7 @@
 #include "interrupts.h"
 #include "../drivers/fb.h"
 #include "../drivers/io.h"
+#include "../drivers/serial.h"
 
 // Definições das portas de I/O para comunicação com o chip 8259 PIC
 #define PIC1_COMMAND  0x20  // Porta de comando do PIC Master
@@ -110,7 +111,7 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
     // 1. Tratamento de Divisão por Zero
     if (interrupt == 0) {
         char msg[] = "Erro: Divisao por zero!\n";
-        fb_write(msg, sizeof(msg) - 1);
+        serial_write(0x3F8, msg, sizeof(msg) - 1);
     } 
     // 2. Tratamento do Teclado
     else if (interrupt == 33) {
@@ -130,7 +131,7 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
 
             if (letra != 0) {
                 char msg_tecla[2] = {letra, '\0'};
-                fb_write(msg_tecla, 1);
+                serial_write(0x3F8, msg_tecla, 1);
             }
         }
     }
