@@ -1,27 +1,33 @@
-ENTRY(loader)                                                           /* o nome do símbolo de entrada */
+ENTRY(loader)                                                           
 
 SECTIONS
 {
-    . = 0xC0100000;                                                     /* o passa a ser linkado a partir endereço virtual */
+    . = 0xC0100000;                                                    
 
-    .text ALIGN(0x1000) : AT(ADDR(.text) - 0xC0000000)                  /* alinha a seção em 4 KB e define o endereço físico de carga correspondente */
+    kernel_virtual_start = .;                                           /*início virtual do kernel */
+    kernel_physical_start = . - 0xC0000000;                             /* aqui tambem */
+
+    .text ALIGN(0x1000) : AT(ADDR(.text) - 0xC0000000)
     {
-        *(.text)                                                        /* todas as seções de texto de todos os arquivos */
+        *(.text)
     }
 
     .rodata ALIGN(0x1000) : AT(ADDR(.rodata) - 0xC0000000)
     {
-        *(.rodata*)                                                     /* todas as seções de dados somente leitura */
+        *(.rodata*)
     }
 
     .data ALIGN(0x1000) : AT(ADDR(.data) - 0xC0000000)
     {
-        *(.data)                                                        /* todas as seções de dados */
+        *(.data)
     }
 
     .bss ALIGN(0x1000) : AT(ADDR(.bss) - 0xC0000000)
     {
-        *(COMMON)                                                       /* todas as seções comuns */
-        *(.bss)                                                         /* todas as seções bss */
+        *(COMMON)
+        *(.bss)
     }
+
+    kernel_virtual_end = .;                                             /* fim virtual do kernel */
+    kernel_physical_end = . - 0xC0000000;                               /* aqui tb fim físico do kernel */
 }
