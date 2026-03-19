@@ -1,13 +1,14 @@
 CORE = src/core/kmain.c src/core/gdt.c
 DRIVERS = src/drivers/fb.c src/drivers/serial.c
 INTERRUPTS = src/interrupts/interrupts.c src/interrupts/idt.c
+MEMORY = src/memory/pfa.c                                               
 ASM = src/core/loader.s src/drivers/io.s src/core/gdt_asm.s src/interrupts/interrupts_asm.s src/interrupts/idt_load_asm.s
 
-OBJECTS = $(CORE:.c=.o) $(DRIVERS:.c=.o) $(INTERRUPTS:.c=.o) $(ASM:.s=.o)
+OBJECTS = $(CORE:.c=.o) $(DRIVERS:.c=.o) $(INTERRUPTS:.c=.o) $(MEMORY:.c=.o) $(ASM:.s=.o)  
 CC = gcc
 CFLAGS = -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
          -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c \
-         -Isrc/core -Isrc/drivers -Isrc/interrupts
+         -Isrc/core -Isrc/drivers -Isrc/interrupts -Isrc/memory        
 LDFLAGS = -T src/core/link.ld -m elf_i386
 AS = nasm
 ASFLAGS = -f elf
@@ -42,4 +43,4 @@ run: os.iso
 	$(AS) $(ASFLAGS) $< -o $@
 
 clean:
-	rm -rf src/core/*.o src/drivers/*.o src/interrupts/*.o *.o kernel.elf os.iso
+	rm -rf src/core/*.o src/drivers/*.o src/interrupts/*.o src/memory/*.o *.o kernel.elf os.iso   # ALTERADO - cap10
