@@ -19,6 +19,29 @@
  * (0-15) para os vetores 32-47, evitando conflitos com as exceções da CPU (0-31).
  * Ao final, ela também aplica uma máscara para silenciar as interrupções indesejadas.
  */
+
+ 
+// Array de mapeamento de Scan Codes para caracteres ASCII (Teclado Americano padrão)
+const char kbd_us[128] = {
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
+  '9', '0', '-', '=', '\b', /* Backspace */
+  '\t',         /* Tab */
+  'q', 'w', 'e', 'r',   /* 19 */
+  't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', /* Enter */
+    0,          /* 29   - Control */
+  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', /* 39 */
+ '\'', '`',   0,        /* Left shift */
+ '\\', 'z', 'x', 'c', 'v', 'b', 'n',            /* 49 */
+  'm', ',', '.', '/',   0,                      /* Right shift */
+  '*',
+    0,  /* Alt */
+  ' ',  /* Barra de Espaço */
+};
+
+
+
+
+
 void pic_remap(void) {
     // ICW1: Inicia a configuração e avisa que o ICW4 será enviado
     outb(PIC1_COMMAND, 0x11);
@@ -79,9 +102,20 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
 
         // Verifica se a tecla foi PRESSIONADA (Make code).
         // Se o bit mais significativo (0x80) for 0, é um Make code. Se for 1, é um Break code (tecla solta).
-        if (!(scan_code & 0x80)) {
-            char msg_tecla[] = "tecla pressionada!\n";
-            fb_write(msg_tecla, sizeof(msg_tecla) - 1);
+       // Verifica se é um Make Code (tecla sendo pressionada) e se está dentro do limite do nosso array (0 a 127)
+        if (!(scan_code & 0x80) && scan_code < 128) {
+            // Busca a letra correspondente no array
+            char letra = kbd_us[scan_code];
+
+            // Só imprime se a tecla tiver uma representação visual (ignora Shift, Ctrl, etc.)
+            if (letra != 0) {
+                // Prepara um array de 2 posições (a letra + o terminador de string nulo)
+                char msg_tecla[2] = {letra, '\0'};
+                
+                // Envia para o driver de vídeo imprimir a letra
+                fb_write(msg_tecla, 1);
+            }
+        
         }
     }
     
