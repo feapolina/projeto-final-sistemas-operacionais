@@ -1,7 +1,7 @@
 CORE = src/core/kmain.c src/core/gdt.c
 DRIVERS = src/drivers/fb.c src/drivers/serial.c
 INTERRUPTS = src/interrupts/interrupts.c src/interrupts/idt.c
-MEMORY = src/memory/pfa.c                                               
+MEMORY = src/memory/pfa.c src/memory/vmm.c src/memory/kheap.c                                     
 ASM = src/core/loader.s src/drivers/io.s src/core/gdt_asm.s src/interrupts/interrupts_asm.s src/interrupts/idt_load_asm.s
 
 OBJECTS = $(CORE:.c=.o) $(DRIVERS:.c=.o) $(INTERRUPTS:.c=.o) $(MEMORY:.c=.o) $(ASM:.s=.o)  

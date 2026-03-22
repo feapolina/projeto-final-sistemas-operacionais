@@ -9,5 +9,7 @@ unsigned int pfa_get_total_memory(void);
 unsigned int pfa_get_total_frames(void);
 unsigned int pfa_get_free_frames(void);
 unsigned int pfa_get_used_frames(void);
+unsigned int pfa_alloc_frame(void);
+void pfa_free_frame(unsigned int phys_addr);
 
 #endif

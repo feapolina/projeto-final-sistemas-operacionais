@@ -39,9 +39,6 @@ const char kbd_us[128] = {
   ' ',  /* Barra de Espaço */
 };
 
-<<<<<<< HEAD
-
-=======
 // Array para quando o Shift estiver pressionado (Maiúsculas e Símbolos)
 const char kbd_us_shift[128] = {
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */
@@ -61,7 +58,6 @@ const char kbd_us_shift[128] = {
 
 // Variável global para "lembrar" se o Shift está pressionado (0 = Não, 1 = Sim)
 static int shift_pressed = 0;
->>>>>>> 78d63dbc7c7c7ca29b2e54f885643ed1c03c12ae
 
 
 

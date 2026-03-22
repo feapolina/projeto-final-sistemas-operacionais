@@ -6,6 +6,8 @@
 #include "../interrupts/idt.h"
 #include "multiboot.h"
 #include "../memory/pfa.h"                                                /* adcionei o header do allocator */
+#include "../memory/vmm.h"                                              /* ADICIONADO: header do virtual memory manager */
+#include "../memory/kheap.h"
 
 #define KERNEL_VIRTUAL_BASE 0XC0000000
 #define FB_GREEN 2
@@ -53,6 +55,51 @@ int kmain(unsigned int ebx)
 
     char msg_pfa_ok[] = "Page frame allocator inicializado.\n";           
     fb_write(msg_pfa_ok, sizeof(msg_pfa_ok) - 1);                       
+
+                   
+
+    /* =========================================================
+       PARTE 4: TESTE DO TEMPORARY MAPPING (VMM)
+       ========================================================= */
+    char msg_vmm_test[] = "Testando Mapeamento Temporario...\n";
+    fb_write(msg_vmm_test, sizeof(msg_vmm_test) - 1);
+
+    // 1. Pede um bloco físico de 4KB para a placa-mãe
+    unsigned int frame_fisico = pfa_alloc_frame();
+    
+    if (frame_fisico != 0) {
+        // 2. Mapeia esse bloco físico no endereço virtual 0xC03FF000
+        char *temp_page = (char *) vmm_temp_map_page(frame_fisico);
+
+        // 3. Escrevemos direto no endereço virtual (a CPU traduz sozinha pro físico)
+        temp_page[0] = '>'; temp_page[1] = '>'; temp_page[2] = ' '; 
+        temp_page[3] = 'T'; temp_page[4] = 'E'; temp_page[5] = 'S'; temp_page[6] = 'T'; 
+        temp_page[7] = 'E'; temp_page[8] = ' '; temp_page[9] = 'V'; temp_page[10] = 'M'; 
+        temp_page[11] = 'M'; temp_page[12] = ' '; temp_page[13] = 'O'; temp_page[14] = 'K'; 
+        temp_page[15] = '!'; temp_page[16] = '\n'; temp_page[17] = '\0';
+
+        // 4. Lemos do endereço virtual e mandamos imprimir no monitor
+        fb_write(temp_page, 17);
+
+        // 5. Destrói o mapeamento virtual e devolve o bloco físico pro sistema
+        vmm_temp_unmap_page();
+        pfa_free_frame(frame_fisico);
+    } else {
+        char msg_vmm_err[] = "ERRO: Sem memoria fisica!\n";
+        fb_write(msg_vmm_err, sizeof(msg_vmm_err) - 1);
+    }
+   
+    char *texto_dinamico = (char *) kmalloc(50);
+if (texto_dinamico != 0) {
+    texto_dinamico[0] = 'H'; texto_dinamico[1] = 'E'; texto_dinamico[2] = 'A'; texto_dinamico[3] = 'P'; 
+    texto_dinamico[4] = ' '; texto_dinamico[5] = 'O'; texto_dinamico[6] = 'K'; texto_dinamico[7] = '\n'; 
+    texto_dinamico[8] = '\0';
+
+    fb_write(texto_dinamico, 8);
+    kfree(texto_dinamico);
+}
+
+
 
     /* Passo 3: verifica se o GRUB carregou modulos */
     char msg_step2[] = "Passo 3: verificando flags...\n";                
