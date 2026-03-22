@@ -32,4 +32,11 @@ typedef struct multiboot_module {
     unsigned long reserved;
 } multiboot_module_t;
 
+typedef struct multiboot_memory_map {                                   /* alteracao da entrada do memory map do GRUB */
+    unsigned int size;                                                  
+    unsigned long long addr;                                            
+    unsigned long long len;                                             
+    unsigned int type;                                                  
+} __attribute__((packed)) multiboot_memory_map_t;    
+                   
 #endif

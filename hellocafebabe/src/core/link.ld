@@ -1,26 +1,38 @@
-ENTRY(loader)                /* o nome do símbolo de entrada */
+ENTRY(loader)
 
-SECTIONS {
-    . = 0x00100000;          /* o código deve ser carregado em 1 MB */
+SECTIONS
+{
+    . = 0xC0100000;
 
-    .text ALIGN (0x1000) :   /* alinha na página de 4 KB */
+    kernel_virtual_start = .;
+    kernel_physical_start = . - 0xC0000000;
+
+    .multiboot ALIGN(4) : AT(ADDR(.multiboot) - 0xC0000000)             /* ADICIONADO - header multiboot primeiro */
     {
-        *(.text)             /* todas as seções de texto de todos os arquivos */
+        KEEP(*(.multiboot))                                              /* ADICIONADO - impede o linker de descartar */
     }
 
-    .rodata ALIGN (0x1000) :
+    .text ALIGN(0x1000) : AT(ADDR(.text) - 0xC0000000)
     {
-        *(.rodata*)          /* todas as seções de dados somente leitura */
+        *(.text)
     }
 
-    .data ALIGN (0x1000) :
+    .rodata ALIGN(0x1000) : AT(ADDR(.rodata) - 0xC0000000)
     {
-        *(.data)             /* todas as seções de dados */
+        *(.rodata*)
     }
 
-    .bss ALIGN (0x1000) :
+    .data ALIGN(0x1000) : AT(ADDR(.data) - 0xC0000000)
     {
-        *(COMMON)            /* todas as seções comuns */
-        *(.bss)              /* todas as seções bss */
+        *(.data)
     }
+
+    .bss ALIGN(0x1000) : AT(ADDR(.bss) - 0xC0000000)
+    {
+        *(COMMON)
+        *(.bss)
+    }
+
+    kernel_virtual_end = .;
+    kernel_physical_end = . - 0xC0000000;
 }

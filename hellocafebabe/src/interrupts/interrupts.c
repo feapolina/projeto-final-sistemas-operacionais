@@ -2,6 +2,7 @@
 #include "interrupts.h"
 #include "../drivers/fb.h"
 #include "../drivers/io.h"
+#include "../drivers/serial.h"
 
 // Definições das portas de I/O para comunicação com o chip 8259 PIC
 #define PIC1_COMMAND  0x20  // Porta de comando do PIC Master
@@ -38,7 +39,29 @@ const char kbd_us[128] = {
   ' ',  /* Barra de Espaço */
 };
 
+<<<<<<< HEAD
 
+=======
+// Array para quando o Shift estiver pressionado (Maiúsculas e Símbolos)
+const char kbd_us_shift[128] = {
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */
+  '(', ')', '_', '+', '\b', /* Backspace */
+  '\t',         /* Tab */
+  'Q', 'W', 'E', 'R',   /* 19 */
+  'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', /* Enter */
+    0,          /* 29   - Control */
+  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', /* 39 */
+ '"', '~',   0,        /* Left shift */
+ '|', 'Z', 'X', 'C', 'V', 'B', 'N',            /* 49 */
+  'M', '<', '>', '?',   0,                      /* Right shift */
+  '*',
+    0,  /* Alt */
+  ' ',  /* Barra de Espaço */
+};
+
+// Variável global para "lembrar" se o Shift está pressionado (0 = Não, 1 = Sim)
+static int shift_pressed = 0;
+>>>>>>> 78d63dbc7c7c7ca29b2e54f885643ed1c03c12ae
 
 
 
@@ -85,50 +108,43 @@ void pic_remap(void) {
  */
 void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stack_state stack)
 {
-    // Prevenção de warnings do compilador para variáveis temporariamente não utilizadas
+    // Prevenção de warnings
     (void)cpu;
     (void)stack;
     
-    // Tratamento de Exceção da CPU: Divisão por Zero
+    // 1. Tratamento de Divisão por Zero
     if (interrupt == 0) {
-        char msg[] = "Erro criado por interrupcao: Divisao por zero detectada!\n";
-        fb_write(msg, sizeof(msg) - 1);
+        char msg[] = "Erro: Divisao por zero!\n";
+        serial_write(0x3F8, msg, sizeof(msg) - 1);
     } 
-    // Tratamento de Interrupção de Hardware: Teclado (IRQ1 remapeada para 32 + 1 = 33)
+    // 2. Tratamento do Teclado
     else if (interrupt == 33) {
-        // Obrigatorio: ler o scan_code da porta 0x60 para liberar o teclado
         unsigned char scan_code = inb(KBD_DATA_PORT);
-        (void)scan_code;
 
-        // Verifica se a tecla foi PRESSIONADA (Make code).
-        // Se o bit mais significativo (0x80) for 0, é um Make code. Se for 1, é um Break code (tecla solta).
-       // Verifica se é um Make Code (tecla sendo pressionada) e se está dentro do limite do nosso array (0 a 127)
-        if (!(scan_code & 0x80) && scan_code < 128) {
-            // Busca a letra correspondente no array
-            char letra = kbd_us[scan_code];
+        // Verifica Shift solto
+        if (scan_code == 0xAA || scan_code == 0xB6) {
+            shift_pressed = 0; 
+        }
+        // Verifica Shift apertado
+        else if (scan_code == 0x2A || scan_code == 0x36) {
+            shift_pressed = 1; 
+        }
+        // Tecla normal (Make Code)
+        else if (!(scan_code & 0x80) && scan_code < 128) {
+            char letra = (shift_pressed) ? kbd_us_shift[scan_code] : kbd_us[scan_code];
 
-            // Só imprime se a tecla tiver uma representação visual (ignora Shift, Ctrl, etc.)
             if (letra != 0) {
-                // Prepara um array de 2 posições (a letra + o terminador de string nulo)
                 char msg_tecla[2] = {letra, '\0'};
-                
-                // Envia para o driver de vídeo imprimir a letra
                 fb_write(msg_tecla, 1);
             }
-        
         }
     }
-    
-    // Controlador (End of Interrupt - EOI)
-    // Se for uma interrupção de hardware (IRQs 0-15 remapeadas para 32-47)
+
+    // 3. Avisar o Controlador (EOI) - ISSO DEVE ESTAR DENTRO DA FUNÇÃO
     if (interrupt >= 32 && interrupt <= 47) {
-        
-        // Se veio do PIC2/Slave (IRQs 8-15 -> 40-47), envia EOI para o Slave
         if (interrupt >= 40) {
             outb(PIC2_COMMAND, PIC_EOI);
         }
-        
-        // Sempre envia EOI para o PIC1/Master nas interrupções de hardware
         outb(PIC1_COMMAND, PIC_EOI);
     }
-}
+} // <--- Esta é a única chave que deve fechar a função inteira!
