@@ -13,6 +13,43 @@
 
 #define KBD_DATA_PORT 0x60  // Porta de dados do controlador de teclado PS/2
 
+/* strlen simples para ambiente freestanding (sem libc) */
+static unsigned int str_len(const char *str)
+{
+  unsigned int len = 0;
+  while (str[len] != '\0') {
+    len++;
+  }
+  return len;
+}
+
+/* Escreve a mesma mensagem nos dois canais de debug: tela e serial */
+static void debug_write(const char *msg)
+{
+  unsigned int len = str_len(msg);
+  fb_write((char *)msg, len);
+  serial_write(0x3F8, (char *)msg, len);
+}
+
+/* Converte um valor de 32 bits para hexadecimal (0xXXXXXXXX) */
+static void debug_write_hex32(unsigned int value)
+{
+  static const char hex_digits[] = "0123456789ABCDEF";
+  char buffer[11];
+  int i;
+
+  buffer[0] = '0';
+  buffer[1] = 'x';
+
+  for (i = 0; i < 8; i++) {
+    unsigned int shift = (unsigned int)(28 - (i * 4));
+    buffer[2 + i] = hex_digits[(value >> shift) & 0xF];
+  }
+
+  buffer[10] = '\0';
+  debug_write(buffer);
+}
+
 /**
  * @brief Remapeia o Controlador de Interrupções Programável (PIC).
  * * O hardware do PIC exige uma sequência exata de 4 comandos de inicialização 
@@ -106,13 +143,52 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
 {
     // Prevenção de warnings
     (void)cpu;
-    (void)stack;
     
     // 1. Tratamento de Divisão por Zero
     if (interrupt == 0) {
         char msg[] = "Erro: Divisao por zero!\n";
         serial_write(0x3F8, msg, sizeof(msg) - 1);
-    } 
+    }
+    // 2. Tratamento básico de Page Fault (vetor 14)
+    else if (interrupt == 14) {
+      unsigned int fault_addr = 0;
+
+      // CR2 guarda o endereço virtual exato que causou a falha.
+      asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
+
+      debug_write("\nERRO CRITICO: PAGE FAULT!\n");
+      debug_write("Endereco virtual (CR2): ");
+      debug_write_hex32(fault_addr);
+      debug_write("\n");
+
+      debug_write("Error code: ");
+      debug_write_hex32(stack.error_code);
+      debug_write("\n");
+
+      // Bit 0: 0 = pagina nao presente, 1 = violacao de protecao
+      if (stack.error_code & 0x1) {
+        debug_write("- Causa: violacao de protecao de pagina.\n");
+      } else {
+        debug_write("- Causa: pagina nao presente.\n");
+      }
+
+      // Bit 1: 0 = leitura, 1 = escrita
+      if (stack.error_code & 0x2) {
+        debug_write("- Operacao: escrita.\n");
+      } else {
+        debug_write("- Operacao: leitura.\n");
+      }
+
+      // Bit 2: 0 = supervisor, 1 = user mode
+      if (stack.error_code & 0x4) {
+        debug_write("- Contexto: user mode.\n");
+      } else {
+        debug_write("- Contexto: supervisor/kernel mode.\n");
+      }
+
+      // Nesta fase inicial, page fault e fatal para manter depuracao simples.
+      while (1) { }
+    }
     // 2. Tratamento do Teclado
     else if (interrupt == 33) {
         unsigned char scan_code = inb(KBD_DATA_PORT);
