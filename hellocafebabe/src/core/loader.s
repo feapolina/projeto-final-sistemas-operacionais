@@ -27,10 +27,10 @@ loader:
     mov esp, kernel_stack + KERNEL_STACK_SIZE - KERNEL_VIRTUAL_BASE
 
     ; ---------------------------------------------------------
-    ; Identity mapping dos primeiros 4 MB
+    ; ↓ Identity mapping dos primeiros 4 MB (Garante que endereço virtual aponte pro mesmo end. físico)
     ; ---------------------------------------------------------
 
-    ; Preenche boot_page_table1: 1024 entradas de 4 KB = 4 MB
+    ; ↓ Preenche boot_page_table1: 1024 entradas de 4 KB = 4 MB
     mov edi, boot_page_table1 - KERNEL_VIRTUAL_BASE
     mov edx, 0x00000003
     mov ecx, 1024
@@ -42,61 +42,62 @@ loader:
     loop .fill_table_loop
 
     ; ---------------------------------------------------------
-    ; Inserir a page table no page directory
+    ; ↓ Inserir a page table no page directory
     ; ---------------------------------------------------------
 
-    ; Entrada 0 -> identity mapping
+    ; ↓ Entrada 0 -> identity mapping
     mov eax, boot_page_table1 - KERNEL_VIRTUAL_BASE
     or eax, 0x00000003
     mov [boot_page_directory - KERNEL_VIRTUAL_BASE], eax
 
-    ; Entrada 768 -> higher half (0xC0000000)
+    ; ↓ Entrada 768 -> higher half (0xC0000000 / 3.221.225.472/4.194.304 = 768)
+    ; ↓ Cada entrada no diretório ocupa 4 bytes, entao o deslocamento na memoria é 768 * 4
     mov eax, boot_page_table1 - KERNEL_VIRTUAL_BASE
     or eax, 0x00000003
     mov [boot_page_directory - KERNEL_VIRTUAL_BASE + 768 * 4], eax
 
     ; ---------------------------------------------------------
-    ; Ativar a paginação
+    ; ↓ Ativar a paginação
     ; ---------------------------------------------------------
 
-    ; CR3 recebe o endereço físico do page directory
+    ; ↓ CR3 recebe o endereço físico do page directory (ponteiro do diretório)
     mov eax, boot_page_directory - KERNEL_VIRTUAL_BASE
     mov cr3, eax
 
-    ; Ativa PSE no CR4
+    ; ↓ Ativa PSE (Extensões de Tamanho de Página) no CR4 (processador ganha a capacidade de mapear blocos diretamente de 4MB de uma vez)
     mov eax, cr4
     or eax, 0x00000010
     mov cr4, eax
 
-    ; Ativa paging no CR0
+    ; ↓ Ativa paging no CR0 (cr0 é como um interruptor geral)
     mov eax, cr0
     or eax, 0x80000000
-    mov cr0, eax
+    mov cr0, eax ; a partir daqui os endereços passam a ser virtuais.
 
     ; ---------------------------------------------------------
-    ; Jump para o higher half
+    ; ↓ Jump para o higher half
     ; ---------------------------------------------------------
 
-    ; higher_half já é um símbolo virtual alto por causa do linker script.
+    ; ↓ higher_half já é um símbolo virtual alto por causa do linker script.
     mov ecx, higher_half
     jmp ecx
 
 higher_half:
     ; =========================================================
-    ; A partir daqui, o kernel já está executando em endereços virtuais altos.
+    ; ↓ A partir daqui, o kernel já está executando em endereços virtuais altos.
     ; =========================================================
 
-    ; Remover identity mapping temporário
+    ; ↓ Remover identity mapping temporário
     mov dword [boot_page_directory], 0
 
-    ; Invalidar a TLB recarregando CR3
+    ; ↓ Invalidar a TLB recarregando CR3 (limpeza das traduções antigas em cache)
     mov ecx, cr3
     mov cr3, ecx
 
-    ; Ajustar a pilha para o espaço virtual alto
+    ; ↓ Ajustar a pilha para o espaço virtual alto
     add esp, KERNEL_VIRTUAL_BASE
 
-    ; Passa o ponteiro multiboot ao kmain
+    ; ↓ Passa o ponteiro multiboot ao kmain
     push ebx
     call kmain
     add esp, 4
@@ -104,16 +105,22 @@ higher_half:
 .loop:
     jmp .loop
 
+; =================================================================================
+; ↓ Aloca espaço na Memória. Devem ter exatamente 4kb de tamanho e alinhados na memoria a um limite de 4kb
+; Cada estrutura terá 1024 entradas de 4 bytes.
+; =================================================================================
 section .bss
-align 4096
+align 4096 ; MMU exige que o endereço físico do page directory e da page table terminem com 3 zeros em hexadecimal, pois 
+           ; os 12 bits menos significativos são usados para flags.
+           ; Pode gerenciar até 4gb de memória ou 1024 tabelas de página.
 
 global boot_page_directory
 boot_page_directory:
-    resb 4096
+    resb 4096 ; Esses 4096 serão usados também para carregar o registro CR3 depois.
 
 global boot_page_table1
 boot_page_table1:
-    resb 4096
+    resb 4096 ; Mapeará os primeiros 4mb de memória física. (1024 x 4kb = 4mb)
 
 align 4
 kernel_stack:
