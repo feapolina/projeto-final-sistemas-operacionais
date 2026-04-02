@@ -1,6 +1,4 @@
-# README - Entrega Final (Memoria Virtual)
-
-Este arquivo resume o que foi implementado nesta etapa da entrega final de Gerenciamento de Memoria Virtual e como validar rapidamente.
+# Entrega Final (Memoria Virtual)
 
 ## O que foi integrado
 
@@ -23,6 +21,14 @@ Este arquivo resume o que foi implementado nesta etapa da entrega final de Geren
 4. Integracao do heap com VMM em `src/memory/kheap.c`
 - `morecore` deixou de escrever direto em `boot_page_table1`
 - Agora usa `vmm_map_page` para mapear novas paginas do heap
+
+## Resumo
+
+1. Centraliza mapeamento em um ponto unico (API do VMM), reduzindo acesso direto na tabela.
+2. Evita sobrescrita acidental de pagina ja mapeada.
+3. Torna erro de unmap repetido explicito.
+4. Melhora depuracao com diagnostico de page fault no console e na serial.
+5. Mantem compatibilidade com o fluxo atual do kernel e com os testes de boot.
 
 ## Arquivos modificados nesta etapa
 
