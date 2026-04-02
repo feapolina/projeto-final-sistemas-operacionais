@@ -1,9 +1,6 @@
 #include "kheap.h"
 #include "pfa.h"
-
-// Puxamos as ferramentas do seu VMM e Paging
-extern unsigned int boot_page_table1[];
-extern void vmm_flush_tlb(unsigned int virt_addr);
+#include "vmm.h"
 
 // Estrutura do K&R: O Header guarda o tamanho do bloco e aponta pro próximo
 typedef long Align;
@@ -31,12 +28,17 @@ static void* morecore(unsigned int nu) {
 
     for(unsigned int i = 0; i < pages; i++) {
         unsigned int phys = pfa_alloc_frame(); // Pede pro PMM (Parte 1)
+        int rc;
+
         if (phys == 0) return 0; // Faltou memória física!
 
-        // Mapeia permanentemente o frame na Tabela de Páginas
-        int index = (heap_curr_vaddr - 0xC0000000) / 4096;
-        boot_page_table1[index] = (phys & 0xFFFFF000) | 0x03; // Presente e Leitura/Escrita
-        vmm_flush_tlb(heap_curr_vaddr); // Limpa o cache (Parte 2)
+        // Mapeia permanentemente a página via API do VMM (ENTREGA FINAL)
+        rc = vmm_map_page(heap_curr_vaddr, phys, 0x02); // RW + Present (forçado na API)
+        if (rc != VMM_OK) {
+            // Se o map falhar, devolvemos o frame alocado nesta iteração.
+            pfa_free_frame(phys);
+            return 0;
+        }
 
         heap_curr_vaddr += 4096; // Avança o ponteiro virtual
     }
