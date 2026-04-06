@@ -219,4 +219,4 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
         }
         outb(PIC1_COMMAND, PIC_EOI);
     }
-} // <--- Esta é a única chave que deve fechar a função inteira!
+}

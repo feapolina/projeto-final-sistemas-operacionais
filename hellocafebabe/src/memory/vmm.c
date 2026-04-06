@@ -12,6 +12,9 @@ extern unsigned int boot_page_table1[];
 #define KERNEL_VIRTUAL_BASE 0xC0000000
 #define BOOT_PT_WINDOW_END 0xC0400000
 
+// Início da região do heap (3 MB acima do KERNEL_VIRTUAL_BASE)
+#define HEAP_REGION_START 0xC0300000
+
 // Flags mágicas de paginação da arquitetura x86
 #define PTE_PRESENT 0x01
 #define PTE_RW      0x02
@@ -32,6 +35,24 @@ static unsigned int boot_pt_index(unsigned int virt_addr)
 }
 
 /**
+ * @brief (ENTREGA FINAL) Limpa os mapeamentos da região do heap que vieram prontos do boot.
+ * O loader preenche as 1024 entradas da tabela inteira, então a faixa do heap
+ * (0xC0300000+) já chega "ocupada". Sem essa limpeza o vmm_map_page acha que
+ * tudo já tá em uso e o kmalloc não consegue crescer.
+ * Zeramos os índices 768..1022 e deixamos o 1023 intacto (slot temporário).
+ */
+void vmm_init(void)
+{
+    unsigned int addr;
+
+    for (addr = HEAP_REGION_START; addr < TEMP_VIRT_ADDR; addr += 0x1000) {
+        unsigned int idx = boot_pt_index(addr);
+        boot_page_table1[idx] = 0;
+        vmm_flush_tlb(addr);
+    }
+}
+
+/**
  * @brief (PARTE 2) Invalida o cache da CPU (TLB) para um endereço específico.
  * Usa um comando inline em Assembly (invlpg) para gritar pro processador ler a tabela de novo.
  */
@@ -41,40 +62,36 @@ void vmm_flush_tlb(unsigned int virt_addr)
 }
 
 /**
- * @brief (ENTREGA FINAL) Mapeia uma página virtual para um frame físico.
- *
- * Regras:
- * - Aceita apenas endereços alinhados em 4KB.
- * - Aceita apenas a janela da boot_page_table1 (0xC0000000..0xC03FFFFF).
- * - Reserva o índice 1023 para o mapeamento temporário.
+ * @brief (ENTREGA FINAL) Mapeia uma página virtual pra um frame físico na boot_page_table1.
+ * Só aceita endereços alinhados em 4KB e dentro da janela de 4 MB do kernel.
  */
 int vmm_map_page(unsigned int virt_addr, unsigned int phys_addr, unsigned int flags)
 {
     unsigned int index;
     unsigned int final_flags;
 
-    // Verifica se os dois endereços estão alinhados em 4KB (tamanho da página).
+    // Os dois endereços precisam ser múltiplos de 4KB
     if (!is_page_aligned(virt_addr) || !is_page_aligned(phys_addr)) {
         return VMM_ERR_INVALID_ADDR;
     }
 
-    // Garante que o endereço virtual está dentro da janela coberta pela tabela inicial.
+    // Tem que estar dentro da janela da tabela (0xC0000000 .. 0xC03FFFFF)
     if (!is_in_boot_pt_window(virt_addr)) {
         return VMM_ERR_INVALID_ADDR;
     }
 
     index = boot_pt_index(virt_addr);
-    // Protege o slot reservado para mapeamento temporário.
+    // O slot 1023 é do mapeamento temporário, não pode mexer
     if (index == TEMP_PAGE_INDEX) {
         return VMM_ERR_INVALID_ADDR;
     }
 
-    // Evita sobrescrita acidental: se ja existe mapeamento, retornamos erro.
+    // Se já tem alguém mapeado aqui, não sobrescreve
     if (vmm_is_mapped(virt_addr)) {
         return VMM_ERR_ALREADY_USED;
     }
 
-    // Mantemos apenas os 12 bits de flags e forçamos o bit Present.
+    // Junta as flags do usuário com o bit Present e grava na tabela
     final_flags = (flags & 0xFFF) | PTE_PRESENT;
     boot_page_table1[index] = (phys_addr & 0xFFFFF000) | final_flags;
     vmm_flush_tlb(virt_addr);
@@ -82,29 +99,26 @@ int vmm_map_page(unsigned int virt_addr, unsigned int phys_addr, unsigned int fl
 }
 
 /**
- * @brief (ENTREGA FINAL) Remove o mapeamento de uma página virtual.
+ * @brief (ENTREGA FINAL) Remove o mapeamento de uma página virtual (zera a entrada na tabela).
  */
 int vmm_unmap_page(unsigned int virt_addr)
 {
     unsigned int index;
 
-    // Para remover, o endereço virtual também precisa estar alinhado em 4KB.
     if (!is_page_aligned(virt_addr)) {
         return VMM_ERR_INVALID_ADDR;
     }
 
-    // Só permitimos unmap da faixa que essa implementação controla.
     if (!is_in_boot_pt_window(virt_addr)) {
         return VMM_ERR_INVALID_ADDR;
     }
 
     index = boot_pt_index(virt_addr);
-    // O índice temporário não pode ser manipulado por esta API.
     if (index == TEMP_PAGE_INDEX) {
         return VMM_ERR_INVALID_ADDR;
     }
 
-    // Unmap de pagina ja vazia retorna erro explicito.
+    // Não faz unmap de página que já tá vazia
     if (!vmm_is_mapped(virt_addr)) {
         return VMM_ERR_NOT_MAPPED;
     }
@@ -115,29 +129,23 @@ int vmm_unmap_page(unsigned int virt_addr)
 }
 
 /**
- * @brief (ENTREGA FINAL) Verifica se uma página virtual está marcada como presente.
- *
- * Definição adotada aqui: "mapeada" significa apenas bit Present ligado.
- * Esta função não valida permissões (RW/US) nem consistência do frame físico.
+ * @brief (ENTREGA FINAL) Checa se uma página virtual tá presente na tabela (bit Present ligado).
  */
 int vmm_is_mapped(unsigned int virt_addr)
 {
     unsigned int index;
 
-    // Endereço desalinhado não representa uma página válida.
     if (!is_page_aligned(virt_addr)) {
         return 0;
     }
 
-    // Fora da janela inicial, esta rotina não consegue afirmar mapeamento.
     if (!is_in_boot_pt_window(virt_addr)) {
         return 0;
     }
 
     index = boot_pt_index(virt_addr);
-    // O slot temporário fica fora desta checagem para evitar falso positivo.
     if (index == TEMP_PAGE_INDEX) {
-        return 0;
+        return 0; // ignora o slot temporário
     }
 
     return (boot_page_table1[index] & PTE_PRESENT) != 0;

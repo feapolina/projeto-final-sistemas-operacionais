@@ -56,6 +56,11 @@ int kmain(unsigned int ebx)
     char msg_pfa_ok[] = "Page frame allocator inicializado.\n";           
     fb_write(msg_pfa_ok, sizeof(msg_pfa_ok) - 1);                       
 
+    /* Inicializa o VMM: limpa mapeamentos fantasma da região do heap */
+    vmm_init();
+    char msg_vmm_init[] = "VMM inicializado (regiao do heap liberada).\n";
+    fb_write(msg_vmm_init, sizeof(msg_vmm_init) - 1);
+
                    
 
     /* =========================================================
@@ -97,6 +102,7 @@ int kmain(unsigned int ebx)
 
     {
         // Endereco escolhido dentro da janela da boot_page_table1 e fora do slot temporario.
+        // Apos vmm_init(), esta pagina esta desmapeada (pronta para uso).
         unsigned int test_virt = 0xC03E0000;
         unsigned int frame_vmm_api = pfa_alloc_frame();
         int rc;
@@ -105,50 +111,47 @@ int kmain(unsigned int ebx)
             char msg_api_no_mem[] = "ERRO: Sem frame fisico para teste da API VMM.\n";
             fb_write(msg_api_no_mem, sizeof(msg_api_no_mem) - 1);
         } else {
-            // 1) Tentativa de mapear endereco ja mapeado deve retornar erro de sobrescrita.
+            // 1) Mapeia a pagina (deve funcionar, pois vmm_init limpou a regiao).
+            rc = vmm_map_page(test_virt, frame_vmm_api, 0x02);
+            if (rc == VMM_OK) {
+                char msg_api_map_ok[] = "OK: vmm_map_page mapeou pagina com sucesso.\n";
+                fb_write(msg_api_map_ok, sizeof(msg_api_map_ok) - 1);
+            }
+
+            // 2) Tenta mapear de novo no mesmo endereco (deve bloquear sobrescrita).
             rc = vmm_map_page(test_virt, frame_vmm_api, 0x02);
             if (rc == VMM_ERR_ALREADY_USED) {
                 char msg_api_overwrite_blocked[] = "OK: VMM bloqueou sobrescrita acidental.\n";
                 fb_write(msg_api_overwrite_blocked, sizeof(msg_api_overwrite_blocked) - 1);
             }
 
-            // 2) Remove o mapeamento atual para preparar o teste de map limpo.
-            rc = vmm_unmap_page(test_virt);
-            if (rc == VMM_OK) {
-                char msg_api_first_unmap[] = "OK: Primeiro unmap executado.\n";
-                fb_write(msg_api_first_unmap, sizeof(msg_api_first_unmap) - 1);
+            // 3) Verifica se vmm_is_mapped confirma a presenca.
+            if (vmm_is_mapped(test_virt)) {
+                char msg_api_is_mapped[] = "OK: vmm_is_mapped confirmou pagina presente.\n";
+                fb_write(msg_api_is_mapped, sizeof(msg_api_is_mapped) - 1);
             }
 
-            // 3) Segundo unmap no mesmo endereco deve avisar que ja estava vazio.
+            // 4) Escreve e le no endereco virtual recem-mapeado.
+            {
+                char *test_page = (char *)test_virt;
+                test_page[0] = 'V'; test_page[1] = 'M'; test_page[2] = 'M';
+                test_page[3] = ' '; test_page[4] = 'O'; test_page[5] = 'K';
+                test_page[6] = '\n';
+                fb_write(test_page, 7);
+            }
+
+            // 5) Remove o mapeamento.
+            rc = vmm_unmap_page(test_virt);
+            if (rc == VMM_OK) {
+                char msg_api_unmap[] = "OK: Unmap executado com sucesso.\n";
+                fb_write(msg_api_unmap, sizeof(msg_api_unmap) - 1);
+            }
+
+            // 6) Segundo unmap no mesmo endereco deve avisar que ja estava vazio.
             rc = vmm_unmap_page(test_virt);
             if (rc == VMM_ERR_NOT_MAPPED) {
                 char msg_api_second_unmap[] = "OK: Unmap detectou pagina ja desmapeada.\n";
                 fb_write(msg_api_second_unmap, sizeof(msg_api_second_unmap) - 1);
-            }
-
-            // 4) Agora sim: mapeia de forma valida para o frame alocado no teste.
-            rc = vmm_map_page(test_virt, frame_vmm_api, 0x02);
-            if (rc == VMM_OK) {
-                char *test_page = (char *)test_virt;
-
-                test_page[0] = 'V';
-                test_page[1] = 'M';
-                test_page[2] = 'M';
-                test_page[3] = ' '; 
-                test_page[4] = 'O';
-                test_page[5] = 'K';
-                test_page[6] = '\n';
-
-                // Leitura/escrita no endereco virtual recem-mapeado.
-                fb_write(test_page, 7);
-
-                if (vmm_is_mapped(test_virt)) {
-                    char msg_api_is_mapped[] = "OK: vmm_is_mapped confirmou pagina presente.\n";
-                    fb_write(msg_api_is_mapped, sizeof(msg_api_is_mapped) - 1);
-                }
-
-                // Limpeza final para nao deixar lixo no estado de memoria.
-                vmm_unmap_page(test_virt);
             }
 
             pfa_free_frame(frame_vmm_api);
