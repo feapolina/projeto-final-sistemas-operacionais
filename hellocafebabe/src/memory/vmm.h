@@ -7,6 +7,9 @@
 #define VMM_ERR_ALREADY_USED -2
 #define VMM_ERR_NOT_MAPPED   -3
 
+// Inicialização: limpa mapeamentos da região do heap herdados do boot
+void vmm_init(void);
+
 // Função da Parte 2: Atualizar a TLB
 void vmm_flush_tlb(unsigned int virt_addr);
 

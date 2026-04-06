@@ -1,57 +1,62 @@
-# Entrega Final (Memoria Virtual)
+# Entrega Final — Gerenciador de Memória Virtual (VMM)
 
-## O que foi integrado
+## O que foi feito
 
-1. API base do VMM em `src/memory/vmm.c` e `src/memory/vmm.h`
-- `vmm_map_page(virt, phys, flags)`
-- `vmm_unmap_page(virt)`
-- `vmm_is_mapped(virt)`
+### 1. vmm_init — Limpeza da região do heap
 
-2. Diagnostico de page fault em `src/interrupts/interrupts.c`
-- Leitura de `CR2` (endereco que causou a falha)
-- Exibicao de `error_code`
-- Decodificacao basica da causa
-- Log em framebuffer e serial
+O `loader.s` preenche todas as 1024 entradas da `boot_page_table1` no boot (4 MB inteiros mapeados). Isso inclui a faixa do heap (a partir de `0xC0300000`). Sem limpar essas entradas, o `vmm_map_page` acha que tudo já tá em uso e o `kmalloc` não consegue crescer.
 
-3. Testes da API no boot em `src/core/kmain.c`
-- Teste de bloqueio de sobrescrita
-- Teste de unmap repetido
-- Teste de mapeamento valido e leitura/escrita
+O `vmm_init` zera os índices 768 a 1022 da tabela (região do heap), deixando o índice 1023 intacto porque é usado pelo mapeamento temporário. É chamado no `kmain` logo depois do `pfa_init`.
 
-4. Integracao do heap com VMM em `src/memory/kheap.c`
-- `morecore` deixou de escrever direto em `boot_page_table1`
-- Agora usa `vmm_map_page` para mapear novas paginas do heap
+### 2. vmm_map_page — Mapeamento permanente
 
-## Resumo
+Escreve na tabela de páginas associando um endereço virtual a um frame físico. Antes de gravar, faz as seguintes verificações:
+- Endereços alinhados em 4KB
+- Dentro da janela da `boot_page_table1` (`0xC0000000` a `0xC03FFFFF`)
+- Não é o slot 1023 (reservado pro temp map)
+- Não sobrescreve mapeamento existente (retorna `VMM_ERR_ALREADY_USED`)
 
-1. Centraliza mapeamento em um ponto unico (API do VMM), reduzindo acesso direto na tabela.
-2. Evita sobrescrita acidental de pagina ja mapeada.
-3. Torna erro de unmap repetido explicito.
-4. Melhora depuracao com diagnostico de page fault no console e na serial.
-5. Mantem compatibilidade com o fluxo atual do kernel e com os testes de boot.
+### 3. vmm_unmap_page — Desmapeamento
 
-## Arquivos modificados nesta etapa
+Zera a entrada correspondente na tabela. Se a entrada já tava vazia, retorna `VMM_ERR_NOT_MAPPED` pra avisar que não tinha nada ali.
 
-- `src/memory/vmm.h`
-- `src/memory/vmm.c`
-- `src/interrupts/interrupts.c`
-- `src/core/kmain.c`
-- `src/memory/kheap.c`
+### 4. vmm_is_mapped — Consulta
 
-## Como testar
+Checa se a entrada da tabela tem o bit Present ligado. Retorna 1 se sim, 0 se não.
 
-Na pasta `hellocafebabe`:
+### 5. Códigos de retorno (vmm.h)
 
-```bash
-make clean
-make os.iso
-make run
-```
+- `VMM_OK` (0) — operação deu certo
+- `VMM_ERR_INVALID_ADDR` (-1) — endereço desalinhado, fora da janela ou slot reservado
+- `VMM_ERR_ALREADY_USED` (-2) — página já mapeada
+- `VMM_ERR_NOT_MAPPED` (-3) — tentou desmapear página vazia
 
-Mensagens esperadas incluem os testes do VMM no boot e, em caso de falha de pagina, diagnostico no console.
+### 6. Integração com o heap (kheap.c)
 
-## Limites atuais
+O `morecore` deixou de escrever direto na `boot_page_table1` e agora usa `vmm_map_page`. Se o mapeamento falhar, devolve o frame pro PFA.
 
-- A API de mapeamento esta focada na janela inicial coberta por `boot_page_table1`.
-- A politica de page fault ainda e de parada controlada para depuracao.
-- Integracoes mais avancadas (ex.: rollback completo em falha de mapeamento multiplo) podem ser evoluidas em etapa futura.
+### 7. Diagnóstico de page fault (interrupts.c)
+
+Adicionado tratamento da interrupção 14. Quando acontece um page fault, o handler lê o registrador CR2 (endereço que causou a falha), decodifica o error_code (causa, operação, contexto) e imprime tudo no framebuffer e na serial. O page fault continua sendo fatal — o VMM previne que ele aconteça mapeando tudo antes de usar.
+
+### 8. Testes no boot (kmain.c)
+
+Bloco de testes que roda durante o boot e valida cada funcionalidade:
+- Mapeamento com sucesso
+- Bloqueio de sobrescrita (`VMM_ERR_ALREADY_USED`)
+- Confirmação via `vmm_is_mapped`
+- Leitura e escrita no endereço mapeado
+- Desmapeamento com sucesso
+- Detecção de double unmap (`VMM_ERR_NOT_MAPPED`)
+- `kmalloc` usando a cadeia completa (PFA → VMM → heap)
+
+## Arquivos modificados
+
+| Arquivo | O que mudou |
+|---------|-------------|
+| `src/memory/vmm.c` | `vmm_init`, `vmm_map_page`, `vmm_unmap_page`, `vmm_is_mapped` |
+| `src/memory/vmm.h` | Códigos de retorno e declaração do `vmm_init` |
+| `src/memory/kheap.c` | `morecore` usa `vmm_map_page` |
+| `src/core/kmain.c` | Chamada do `vmm_init` + testes da API |
+| `src/interrupts/interrupts.c` | Handler de page fault (interrupção 14) |
+
