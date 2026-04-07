@@ -9,16 +9,16 @@
 #include "../memory/vmm.h"                                              /* ADICIONADO: header do virtual memory manager */
 #include "../memory/kheap.h"
 
-#define KERNEL_VIRTUAL_BASE 0XC0000000asdasdas
+#define KERNEL_VIRTUAL_BASE 0XC0000000
 
-int kmaina(unsigned int ebxqwdfafasf)
+int kmain(unsigned int ebx)
 {
     /* Limpa textos residuais deixados pela BIOS ou GRUB*/
-    fb_clear();
-    log_info("Iniciando o Sistema Operacional...");
+    fb_clear()
+    log_info("Iniciando o Sistema Operacional...")
     /* 1. Inicializa a GDT (Segmentação de Memória) */
-    init_gdt();
-    idt_install();
+    init_gdt()
+    idt_install()
 
     /* 2. Remapeia o PIC */
     pic_remap();
