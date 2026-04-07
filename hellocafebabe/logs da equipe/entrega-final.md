@@ -35,13 +35,24 @@ Checa se a entrada da tabela tem o bit Present ligado. Retorna 1 se sim, 0 se n�
 
 O `morecore` deixou de escrever direto na `boot_page_table1` e agora usa `vmm_map_page`. Se o mapeamento falhar, devolve o frame pro PFA.
 
-### 7. Diagnóstico de page fault (interrupts.c)
+### 7. Demand Paging — Paginação sob Demanda (interrupts.c) — Capítulo 10
 
-Adicionado tratamento da interrupção 14. Quando acontece um page fault, o handler lê o registrador CR2 (endereço que causou a falha), decodifica o error_code (causa, operação, contexto) e imprime tudo no framebuffer e na serial. O page fault continua sendo fatal — o VMM previne que ele aconteça mapeando tudo antes de usar.
+Quando ocorre um page fault por "página não presente" (bit 0 do error_code = 0) dentro da janela gerenciável do kernel (`0xC0000000` a `0xC03FEFFF`), o handler executa os 6 passos descritos no livro:
+
+1. **Trap** — a CPU gera a interrupção 14 e o handler lê o endereço faltante do registrador CR2
+2. **Localizar** — verifica se o endereço está dentro da janela que o VMM consegue gerenciar
+3. **Alocar** — chama `pfa_alloc_frame()` para obter um frame físico livre
+4. **Mapear** — grava a entrada na tabela de páginas via `vmm_map_page()` (Present + RW)
+5. **Zero-fill** — zera os 4096 bytes da nova página por segurança (Zero-Fill-On-Demand)
+6. **Reiniciar** — retorna da interrupção; o `iret` do assembly reinicia a instrução que falhou, que agora encontra a página presente
+
+Se a falha não pode ser resolvida (violação de proteção, endereço fora da janela ou sem memória), o sistema imprime diagnóstico completo (endereço CR2, error_code decodificado) e trava.
 
 ### 8. Testes no boot (kmain.c)
 
 Bloco de testes que roda durante o boot e valida cada funcionalidade:
+
+**API base do VMM:**
 - Mapeamento com sucesso
 - Bloqueio de sobrescrita (`VMM_ERR_ALREADY_USED`)
 - Confirmação via `vmm_is_mapped`
@@ -50,6 +61,13 @@ Bloco de testes que roda durante o boot e valida cada funcionalidade:
 - Detecção de double unmap (`VMM_ERR_NOT_MAPPED`)
 - `kmalloc` usando a cadeia completa (PFA → VMM → heap)
 
+**Demand Paging:**
+- Confirma que a página `0xC03D0000` não está mapeada (desmapeada pelo `vmm_init`)
+- Escreve diretamente no endereço desmapeado → dispara page fault (INT 14)
+- O handler resolve a falha sob demanda: aloca frame → mapeia → zero-fill → retorna
+- A CPU reinicia a instrução de escrita, que agora funciona normalmente
+- Confirma que a página agora está mapeada (o handler resolveu)
+
 ## Arquivos modificados
 
 | Arquivo | O que mudou |
@@ -57,6 +75,6 @@ Bloco de testes que roda durante o boot e valida cada funcionalidade:
 | `src/memory/vmm.c` | `vmm_init`, `vmm_map_page`, `vmm_unmap_page`, `vmm_is_mapped` |
 | `src/memory/vmm.h` | Códigos de retorno e declaração do `vmm_init` |
 | `src/memory/kheap.c` | `morecore` usa `vmm_map_page` |
-| `src/core/kmain.c` | Chamada do `vmm_init` + testes da API |
-| `src/interrupts/interrupts.c` | Handler de page fault (interrupção 14) |
+| `src/core/kmain.c` | Chamada do `vmm_init` + testes da API + teste de demand paging |
+| `src/interrupts/interrupts.c` | Handler de page fault com demand paging |
 
