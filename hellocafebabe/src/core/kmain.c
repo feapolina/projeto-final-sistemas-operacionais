@@ -14,11 +14,11 @@
 int kmain(unsigned int ebx)
 {
     /* Limpa textos residuais deixados pela BIOS ou GRUB*/
-    fb_clear()
-    log_info("Iniciando o Sistema Operacional...")
+    fb_clear();
+    log_info("Iniciando o Sistema Operacional...");
     /* 1. Inicializa a GDT (Segmentação de Memória) */
-    init_gdt()
-    idt_install()
+    init_gdt();
+    idt_install();
 
     /* 2. Remapeia o PIC */
     pic_remap();
