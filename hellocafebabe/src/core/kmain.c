@@ -43,18 +43,13 @@ int kmain(unsigned int ebx)
     log_info("Lendo estruturas do Multiboot...");
     multiboot_info_t *mbinfo = (multiboot_info_t *) (ebx + KERNEL_VIRTUAL_BASE);
 
-    char msg_pfa[] = "Passo 2: inicializando page frame allocator...\n";  
-    fb_write(msg_pfa, sizeof(msg_pfa) - 1);                               
-
+    log_info("Passo 2: inicializando page frame allocator...");
     pfa_init(mbinfo);                                                     /* Inicia o allocator */
-
-    char msg_pfa_ok[] = "Page frame allocator inicializado.\n";           
-    fb_write(msg_pfa_ok, sizeof(msg_pfa_ok) - 1);                       
+    log_success("Page frame allocator inicializado.");
 
     /* Inicializa o VMM: limpa mapeamentos fantasma da região do heap */
     vmm_init();
-    char msg_vmm_init[] = "VMM inicializado (regiao do heap liberada).\n";
-    fb_write(msg_vmm_init, sizeof(msg_vmm_init) - 1);
+    log_success("VMM inicializado (regiao do heap liberada).");
 
                    
 
@@ -106,8 +101,7 @@ int kmain(unsigned int ebx)
             // 1) Mapeia a pagina (deve funcionar, pois vmm_init limpou a regiao).
             rc = vmm_map_page(test_virt, frame_vmm_api, 0x02);
             if (rc == VMM_OK) {
-                char msg_api_map_ok[] = "OK: vmm_map_page mapeou pagina com sucesso.\n";
-                fb_write(msg_api_map_ok, sizeof(msg_api_map_ok) - 1);
+                log_success("OK: vmm_map_page mapeou pagina com sucesso.");
             }
 
             // 2) Tenta mapear de novo no mesmo endereco (deve bloquear sobrescrita).
@@ -118,8 +112,7 @@ int kmain(unsigned int ebx)
 
             // 3) Verifica se vmm_is_mapped confirma a presenca.
             if (vmm_is_mapped(test_virt)) {
-                char msg_api_is_mapped[] = "OK: vmm_is_mapped confirmou pagina presente.\n";
-                fb_write(msg_api_is_mapped, sizeof(msg_api_is_mapped) - 1);
+                log_success("OK: vmm_is_mapped confirmou pagina presente.");
             }
 
             // 4) Escreve e le no endereco virtual recem-mapeado.
@@ -134,8 +127,7 @@ int kmain(unsigned int ebx)
             // 5) Remove o mapeamento.
             rc = vmm_unmap_page(test_virt);
             if (rc == VMM_OK) {
-                char msg_api_unmap[] = "OK: Unmap executado com sucesso.\n";
-                fb_write(msg_api_unmap, sizeof(msg_api_unmap) - 1);
+                log_success("OK: Unmap executado com sucesso.");
             }
 
             // 6) Segundo unmap no mesmo endereco deve avisar que ja estava vazio.
@@ -156,7 +148,7 @@ int kmain(unsigned int ebx)
         texto_dinamico[4] = ' '; texto_dinamico[5] = 'O'; texto_dinamico[6] = 'K'; texto_dinamico[7] = '\n'; 
         texto_dinamico[8] = '\0';
 
-        fb_write(texto_dinamico, 8);
+        log_success("Heap alocado com sucesso.");
         kfree(texto_dinamico);
     } else {
         log_error("Falha ao alocar memoria via kmalloc!");
