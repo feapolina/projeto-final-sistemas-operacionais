@@ -9,9 +9,9 @@
 #include "../memory/vmm.h"                                              /* ADICIONADO: header do virtual memory manager */
 #include "../memory/kheap.h"
 
-#define KERNEL_VIRTUAL_BASE 0XC0000000
+#define KERNEL_VIRTUAL_BASE 0XC0000000asdasdas
 
-int kmaina(unsigned int ebx)
+int kmaina(unsigned int ebxqwdfafasf)
 {
     /* Limpa textos residuais deixados pela BIOS ou GRUB*/
     fb_clear();
