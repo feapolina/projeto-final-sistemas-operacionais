@@ -11,7 +11,7 @@
 
 #define KERNEL_VIRTUAL_BASE 0XC0000000
 
-int kmain(unsigned int ebx)
+int kmaina(unsigned int ebx)
 {
     /* Limpa textos residuais deixados pela BIOS ou GRUB*/
     fb_clear();
