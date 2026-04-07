@@ -168,7 +168,43 @@ if (texto_dinamico != 0) {
     kfree(texto_dinamico);
 }
 
+    /* =========================================================
+       TESTE DO DEMAND PAGING (ENTREGA FINAL)
+       ========================================================= */
+    {
+        char msg_dp[] = "Testando Demand Paging...\n";
+        fb_write(msg_dp, sizeof(msg_dp) - 1);
 
+        // Endereco na regiao do heap, desmapeado pelo vmm_init().
+        // Ninguem fez vmm_map_page aqui — a pagina NAO existe na tabela.
+        unsigned int demand_virt = 0xC03D0000;
+
+        // 1) Confirma que a pagina nao esta mapeada antes do acesso.
+        if (!vmm_is_mapped(demand_virt)) {
+            char msg_not[] = "  Pagina 0xC03D0000 NAO mapeada (esperado).\n";
+            fb_write(msg_not, sizeof(msg_not) - 1);
+        }
+
+        // 2) Escreve no endereco desmapeado.
+        //    Isso dispara uma Page Fault (INT 14).
+        //    O handler resolve a falha via demand paging:
+        //      aloca frame -> mapeia -> zero-fill -> retorna (iret).
+        //    A CPU reinicia esta instrucao e ela funciona normalmente.
+        char *dp = (char *)demand_virt;
+        dp[0] = 'D'; dp[1] = 'E'; dp[2] = 'M'; dp[3] = 'A';
+        dp[4] = 'N'; dp[5] = 'D'; dp[6] = ' '; dp[7] = 'P';
+        dp[8] = 'A'; dp[9] = 'G'; dp[10] = 'I'; dp[11] = 'N';
+        dp[12] = 'G'; dp[13] = ' '; dp[14] = 'O'; dp[15] = 'K';
+        dp[16] = '!'; dp[17] = '\n';
+
+        fb_write(dp, 18);
+
+        // 3) Confirma que agora a pagina esta mapeada (o handler resolveu).
+        if (vmm_is_mapped(demand_virt)) {
+            char msg_ok[] = "  Pagina mapeada sob demanda com sucesso!\n";
+            fb_write(msg_ok, sizeof(msg_ok) - 1);
+        }
+    }
 
     /* Passo 3: verifica se o GRUB carregou modulos */
     char msg_step2[] = "Passo 3: verificando flags...\n";                

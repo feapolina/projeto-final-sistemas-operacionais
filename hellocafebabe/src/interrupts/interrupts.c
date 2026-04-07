@@ -3,6 +3,8 @@
 #include "../drivers/fb.h"
 #include "../drivers/io.h"
 #include "../drivers/serial.h"
+#include "../memory/pfa.h"
+#include "../memory/vmm.h"
 
 // Definições das portas de I/O para comunicação com o chip 8259 PIC
 #define PIC1_COMMAND  0x20  // Porta de comando do PIC Master
@@ -149,14 +151,65 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
         char msg[] = "Erro: Divisao por zero!\n";
         serial_write(0x3F8, msg, sizeof(msg) - 1);
     }
-    // 2. Tratamento básico de Page Fault (vetor 14)
+    // 2. Tratamento de Page Fault (vetor 14) — Demand Paging
     else if (interrupt == 14) {
       unsigned int fault_addr = 0;
+      unsigned int page_addr;
 
-      // CR2 guarda o endereço virtual exato que causou a falha.
+      // [Passo 1 - TRAP] CR2 guarda o endereço virtual exato que causou a falha.
       asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
+      page_addr = fault_addr & 0xFFFFF000;  // alinha pro inicio da pagina
 
-      debug_write("\nERRO CRITICO: PAGE FAULT!\n");
+      // ============================================================
+      //  DEMAND PAGING: Tenta resolver a falha antes de declarar erro
+      // ============================================================
+      //  Se a causa for "pagina nao presente" (bit 0 = 0),
+      //  tentamos alocar um frame e mapear a pagina sob demanda.
+      //  Isso implementa o Zero-Fill-On-Demand descrito no Cap. 10.
+      // ============================================================
+      if (!(stack.error_code & 0x1)) {
+        // [Passo 2 - LOCALIZAR] Verifica se o endereço esta na janela
+        // que o VMM consegue gerenciar (0xC0000000 .. 0xC03FEFFF).
+        if (page_addr >= 0xC0000000 && page_addr < 0xC03FF000) {
+
+          // [Passo 3 - ALOCAR] Pede um frame fisico livre ao PFA
+          unsigned int frame = pfa_alloc_frame();
+
+          if (frame != 0) {
+            // [Passo 4 - MAPEAR] Grava a entrada na tabela de paginas (Present + RW)
+            int rc = vmm_map_page(page_addr, frame, 0x02);
+
+            if (rc == VMM_OK) {
+              // [Passo 5 - ZERO-FILL] Zera a pagina por seguranca
+              unsigned char *p = (unsigned char *)page_addr;
+              unsigned int i;
+              for (i = 0; i < 4096; i++) {
+                p[i] = 0;
+              }
+
+              debug_write("[DEMAND PAGING] Pagina alocada em: ");
+              debug_write_hex32(page_addr);
+              debug_write(" -> frame: ");
+              debug_write_hex32(frame);
+              debug_write("\n");
+
+              // [Passo 6 - REINICIAR] Retorna da interrupcao.
+              // O assembly faz 'iret', que reinicia a instrucao que falhou.
+              // Desta vez a pagina existe e a instrucao vai funcionar.
+              return;
+            } else {
+              // Map falhou (ex: ja estava mapeada) — devolve o frame
+              pfa_free_frame(frame);
+            }
+          }
+        }
+      }
+
+      // ============================================================
+      //  Se chegou aqui, a falha NAO pode ser resolvida.
+      //  (violacao de protecao, fora da janela, ou sem memoria)
+      // ============================================================
+      debug_write("\nERRO CRITICO: PAGE FAULT IRRECUPERAVEL!\n");
       debug_write("Endereco virtual (CR2): ");
       debug_write_hex32(fault_addr);
       debug_write("\n");
@@ -165,28 +218,22 @@ void interrupt_handler(struct cpu_state cpu, unsigned int interrupt, struct stac
       debug_write_hex32(stack.error_code);
       debug_write("\n");
 
-      // Bit 0: 0 = pagina nao presente, 1 = violacao de protecao
       if (stack.error_code & 0x1) {
         debug_write("- Causa: violacao de protecao de pagina.\n");
       } else {
-        debug_write("- Causa: pagina nao presente.\n");
+        debug_write("- Causa: pagina nao presente (sem frame disponivel).\n");
       }
-
-      // Bit 1: 0 = leitura, 1 = escrita
       if (stack.error_code & 0x2) {
         debug_write("- Operacao: escrita.\n");
       } else {
         debug_write("- Operacao: leitura.\n");
       }
-
-      // Bit 2: 0 = supervisor, 1 = user mode
       if (stack.error_code & 0x4) {
         debug_write("- Contexto: user mode.\n");
       } else {
         debug_write("- Contexto: supervisor/kernel mode.\n");
       }
 
-      // Nesta fase inicial, page fault e fatal para manter depuracao simples.
       while (1) { }
     }
     // 2. Tratamento do Teclado
