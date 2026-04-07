@@ -21,7 +21,7 @@ jobs:
 
       - name: Compilar o Sistema Operacional
         working-directory: ./hellocafebabe
-        run: ./build.sh
+        run: make -f Makefile.ci os.iso
 
       - name: Salvar a ISO como Artefato
         uses: actions/upload-artifact@v4
