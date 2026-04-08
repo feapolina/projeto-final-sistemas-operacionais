@@ -2,7 +2,7 @@
 
 Este projeto foi desenvolvido para a disciplina de Sistemas Operacionais I, lecionada pelo professor Davi. O objetivo principal é a implementação passo a passo de um sistema operacional, seguindo as instruções e a arquitetura propostas pelo repositório e livro [The Little OS Book](https://littleosbook.github.io/).
 
-Importante ressaltar que existem alguns logs de desenvolvimento, detalhando melhor a implementação de algumas coisas. O caminho da pasta é src/logs da equipe/
+Importante ressaltar que existem alguns logs de desenvolvimento, detalhando melhor a implementação de algumas coisas. O caminho da pasta é hellocafebabe/logs da equipe/
 ---
 
 ## 👥 Equipe
