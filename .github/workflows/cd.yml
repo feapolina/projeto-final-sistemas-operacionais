@@ -1,0 +1,95 @@
+name: Deploy Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    outputs:
+      iso_path: ${{ steps.build.outputs.iso_path }}
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar Dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential nasm genisoimage grub-pc-bin grub-common mtools qemu-system-x86
+
+      - name: Compilar o Sistema Operacional
+        id: build
+        working-directory: ./hellocafebabe
+        run: |
+          make -f Makefile.ci os.iso
+          echo "iso_path=$(pwd)/os.iso" >> $GITHUB_OUTPUT
+
+      - name: Subir ISO como artefato temporário
+        uses: actions/upload-artifact@v4
+        with:
+          name: os-iso-${{ github.ref_name }}
+          path: ./hellocafebabe/os.iso
+          retention-days: 1
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar Dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86
+
+      - name: Baixar ISO
+        uses: actions/download-artifact@v4
+        with:
+          name: os-iso-${{ github.ref_name }}
+          path: ./hellocafebabe
+
+      - name: Testar ISO com QEMU (timeout 10s)
+        working-directory: ./hellocafebabe
+        run: |
+          timeout 10s qemu-system-i386 -cdrom os.iso -display none -serial stdio || true
+
+  release:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Baixar ISO
+        uses: actions/download-artifact@v4
+        with:
+          name: os-iso-${{ github.ref_name }}
+          path: ./dist
+
+      - name: Criar GitHub Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+
+      - name: Upload ISO como asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/os.iso
+          asset_name: hellocafebabe-${{ github.ref_name }}.iso
+          asset_content_type: application/octet-stream
