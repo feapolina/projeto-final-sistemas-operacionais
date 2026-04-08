@@ -32,8 +32,6 @@ int kmain(unsigned int ebx)
 
     /* Inicializa Serial */
     serial_init(0x3F8);
-    char msg_serial[] = "Comunicacao via porta serial do PC ativa com sucesso!\n";
-    serial_write(0x3F8, msg_serial, sizeof(msg_serial) - 1);
     log_success("Comunicacao via porta serial (COM1) ativa.");
 
     /* =========================
@@ -158,8 +156,7 @@ int kmain(unsigned int ebx)
        TESTE DO DEMAND PAGING (ENTREGA FINAL)
        ========================================================= */
     {
-        char msg_dp[] = "Testando Demand Paging...\n";
-        fb_write(msg_dp, sizeof(msg_dp) - 1);
+        log_info("Testando Demand Paging...");
 
         // Endereco na regiao do heap, desmapeado pelo vmm_init().
         // Ninguem fez vmm_map_page aqui — a pagina NAO existe na tabela.
@@ -167,8 +164,7 @@ int kmain(unsigned int ebx)
 
         // 1) Confirma que a pagina nao esta mapeada antes do acesso.
         if (!vmm_is_mapped(demand_virt)) {
-            char msg_not[] = "  Pagina 0xC03D0000 NAO mapeada (esperado).\n";
-            fb_write(msg_not, sizeof(msg_not) - 1);
+            log_info("Pagina 0xC03D0000 NAO mapeada (esperado).");
         }
 
         // 2) Escreve no endereco desmapeado.
@@ -183,22 +179,18 @@ int kmain(unsigned int ebx)
         dp[12] = 'G'; dp[13] = ' '; dp[14] = 'O'; dp[15] = 'K';
         dp[16] = '!'; dp[17] = '\n';
 
-        fb_write(dp, 18);
+        log_success("Demand Paging executado com sucesso!");
 
         // 3) Confirma que agora a pagina esta mapeada (o handler resolveu).
         if (vmm_is_mapped(demand_virt)) {
-            char msg_ok[] = "  Pagina mapeada sob demanda com sucesso!\n";
-            fb_write(msg_ok, sizeof(msg_ok) - 1);
+            log_success("Pagina mapeada sob demanda com sucesso!");
         }
     }
 
-    /* Passo 3: verifica se o GRUB carregou modulos */
-    char msg_step2[] = "Passo 3: verificando flags...\n";                
-    fb_write(msg_step2, sizeof(msg_step2) - 1);
     /* =========================================================
        VERIFICAÇÃO DE MÓDULOS E TRANSIÇÃO PARA USERMODE
        ========================================================= */
-    log_info("Verificando flags do GRUB...");
+    log_info("Passo 3: verificando flags...");
 
     if (!(mbinfo->flags & 0x8)) {
         log_error("GRUB nao carregou modulos.");
